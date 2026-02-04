@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-slate-900 text-white font-sans antialiased;
-  }
+    body {
+        @apply bg-background text-white font-sans antialiased;
+    }
 }

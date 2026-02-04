@@ -1,72 +1,60 @@
-import { Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
+import { Link } from "react-router-dom"
+import { Facebook, Instagram, Twitter } from "lucide-react"
 
-const Footer = () => {
+export default function Footer() {
     return (
-        <footer className="bg-slate-950 pt-16 pb-8 border-t border-slate-900">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <footer className="border-t border-gray-800 bg-background py-12 pb-8">
+            <div className="container mx-auto px-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+                    {/* Brand */}
                     <div className="col-span-1 md:col-span-1">
                         <div className="flex items-center gap-2 mb-4">
-                            <span className="text-2xl">🏸</span>
-                            <span className="text-xl font-bold text-white">SmashClub</span>
+                            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
+                                <span className="text-background font-bold text-sm">S</span>
+                            </div>
+                            <span className="text-lg font-bold text-white">SmashClub</span>
                         </div>
-                        <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                            Membangun ekosistem tennis digital terbesar di Indonesia untuk memudahkan akses dan koneksi bagi para penggemar tepok bola.
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                            Jakarta Selatan Tennis Community. Pusat olahraga tennis dengan fasilitas booking lapangan dan toko peralatan terlengkap.
                         </p>
-                        <div className="flex space-x-4">
-                            <a href="#" className="text-slate-400 hover:text-emerald-500 transition-colors">
-                                <Instagram className="h-5 w-5" />
-                            </a>
-                            <a href="#" className="text-slate-400 hover:text-emerald-500 transition-colors">
-                                <Twitter className="h-5 w-5" />
-                            </a>
-                            <a href="#" className="text-slate-400 hover:text-emerald-500 transition-colors">
-                                <Facebook className="h-5 w-5" />
-                            </a>
-                            <a href="#" className="text-slate-400 hover:text-emerald-500 transition-colors">
-                                <Youtube className="h-5 w-5" />
-                            </a>
+                        <div className="flex gap-4 mt-6">
+                            <a href="#" className="text-gray-400 hover:text-primary"><Instagram className="w-5 h-5" /></a>
+                            <a href="#" className="text-gray-400 hover:text-primary"><Twitter className="w-5 h-5" /></a>
+                            <a href="#" className="text-gray-400 hover:text-primary"><Facebook className="w-5 h-5" /></a>
                         </div>
                     </div>
 
+                    {/* Links */}
                     <div>
-                        <h3 className="text-white font-semibold mb-4">Layanan</h3>
-                        <ul className="space-y-3 text-sm text-slate-400">
-                            <li><a href="#" className="hover:text-emerald-500 transition-colors">Booking Lapangan</a></li>
-                            <li><a href="#" className="hover:text-emerald-500 transition-colors">Turnamen</a></li>
-                            <li><a href="#" className="hover:text-emerald-500 transition-colors">Cari Pelatih</a></li>
-                            <li><a href="#" className="hover:text-emerald-500 transition-colors">Member Pro</a></li>
+                        <h4 className="font-bold text-white mb-4">Layanan Utama</h4>
+                        <ul className="space-y-3 text-sm text-gray-400">
+                            <li><Link to="/booking" className="hover:text-primary">Booking Lapangan</Link></li>
+                            <li><Link to="/shop" className="hover:text-primary">Toko Peralatan</Link></li>
+                            <li><Link to="/community" className="hover:text-primary">Turnamen Member</Link></li>
+                            <li><Link to="/training" className="hover:text-primary">Pelatihan Tennis</Link></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h3 className="text-white font-semibold mb-4">Tentang</h3>
-                        <ul className="space-y-3 text-sm text-slate-400">
-                            <li><a href="#" className="hover:text-emerald-500 transition-colors">Karir</a></li>
-                            <li><a href="#" className="hover:text-emerald-500 transition-colors">Kebijakan Privasi</a></li>
-                            <li><a href="#" className="hover:text-emerald-500 transition-colors">Syarat & Ketentuan</a></li>
-                            <li><a href="#" className="hover:text-emerald-500 transition-colors">Hubungi Kami</a></li>
-                        </ul>
-                    </div>
-
-                    <div>
-                        <h3 className="text-white font-semibold mb-4">Kontak</h3>
-                        <ul className="space-y-3 text-sm text-slate-400">
-                            <li>support@smashclub.id</li>
-                            <li>+62 812 3456 7890</li>
-                            <li>Jakarta, Indonesia</li>
+                        <h4 className="font-bold text-white mb-4">Tentang Kami</h4>
+                        <ul className="space-y-3 text-sm text-gray-400">
+                            <li><a href="#" className="hover:text-primary">Lokasi Jakarta Selatan</a></li>
+                            <li><a href="#" className="hover:text-primary">Kebijakan Privasi</a></li>
+                            <li><a href="#" className="hover:text-primary">Syarat & Ketentuan</a></li>
+                            <li><a href="#" className="hover:text-primary">Hubungi Kami</a></li>
                         </ul>
                     </div>
                 </div>
 
-                <div className="border-t border-slate-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-slate-500 text-sm text-center md:text-left">
-                        &copy; {new Date().getFullYear()} SmashClub Indonesia. Seluruh Hak Cipta Dilindungi.
-                    </p>
+                <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+                    <p>&copy; 2024 SmashClub Tennis Community. Seluruh hak cipta dilindungi.</p>
+                    <div className="flex gap-6 mt-4 md:mt-0">
+                        <a href="#" className="hover:text-white">Syarat & Ketentuan</a>
+                        <a href="#" className="hover:text-white">Kebijakan Privasi</a>
+                        <a href="#" className="hover:text-white">Pusat Bantuan</a>
+                    </div>
                 </div>
             </div>
         </footer>
-    );
-};
-
-export default Footer;
+    )
+}

@@ -2,18 +2,19 @@
 export default {
     content: [
         "./index.html",
-        "./src/**/*.{js,ts,jsx,tsx}",
+        "./src/**/*.{ts,tsx}",
     ],
     theme: {
         extend: {
             colors: {
-                primary: "#14b99b",
-                secondary: "#16a34a",
-                dark: "#1e293b",
-                light: "#f8fafc",
+                background: "#0d1b1e", // Dark greenish black
+                primary: "#00d6b5", // Teal/Cyan
+                secondary: "#d2ff00", // Tennis ball yellow
+                card: "#16282a", // Slightly lighter dark for cards
+                "card-hover": "#1c3235",
             },
             fontFamily: {
-                sans: ['Inter', 'sans-serif'],
+                sans: ["Inter", "sans-serif"],
             },
         },
     },
