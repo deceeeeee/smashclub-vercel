@@ -61,8 +61,8 @@ export default function Home() {
                         />
                         <ServiceCard
                             icon={<Users className="w-6 h-6 text-primary" />}
-                            title="Cari Lawan Main"
-                            desc="Fitur matchmaking berdasarkan level NTRP untuk memastikan pertandingan yang kompetitif dan seru."
+                            title="Kenalan dengan Pelatih"
+                            desc="Anda dapat menemukan pelatih tenis berpengalaman yang menawarkan program untuk semua tingkat kemampuan."
                         />
                     </div>
                 </div>
