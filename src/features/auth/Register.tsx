@@ -1,15 +1,17 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Link, useNavigate } from "react-router-dom"
-import { Search, ShoppingBag, Users, Eye, EyeOff, Lock, Mail, Phone, User as UserIcon, ArrowRight } from "lucide-react"
-import { useState } from "react"
+import { useNavigate, Link } from "react-router-dom"
+import { Search, ShoppingBag, Users, Eye, EyeOff, Lock, Mail, User as UserIcon, ArrowRight } from "lucide-react"
+import { useState, useEffect } from "react"
 import { cn } from "../../lib/utils"
+import { useAuthStore } from "./auth.store"
+import { useMutation } from "@tanstack/react-query"
+import { authService } from "./auth.service"
 
 const registerSchema = z.object({
     fullName: z.string().min(3, "Nama lengkap minimal 3 karakter"),
     email: z.string().email("Email tidak valid"),
-    phone: z.string().min(10, "Nomor telepon tidak valid"),
     password: z.string().min(8, "Password minimal 8 karakter"),
     terms: z.boolean().refine((val) => val === true, "Anda harus menyetujui Syarat & Ketentuan"),
 })
@@ -18,17 +20,64 @@ type RegisterForm = z.infer<typeof registerSchema>
 
 export default function Register() {
     const navigate = useNavigate()
+    const { token } = useAuthStore()
     const [showPassword, setShowPassword] = useState(false)
+    const [generalError, setGeneralError] = useState<string | null>(null)
 
-    const { register, handleSubmit, formState: { errors } } = useForm<RegisterForm>({
+    // Redirect if already logged in
+    useEffect(() => {
+        if (token) {
+            navigate("/")
+        }
+    }, [token, navigate])
+
+
+    const { register, handleSubmit, setError, formState: { errors } } = useForm<RegisterForm>({
         resolver: zodResolver(registerSchema)
     })
 
+    const mutation = useMutation({
+        mutationFn: authService.register,
+        onSuccess: (response) => {
+            if (response.success) {
+                // Navigate to verification page with user data
+                navigate("/verify", {
+                    state: {
+                        email: response.data?.email,
+                        fullName: response.data?.fullName
+                    }
+                })
+            } else {
+                // Handle business logic errors
+                if (response.error === "Validation failed" && response.details) {
+                    Object.entries(response.details).forEach(([key, value]) => {
+                        setError(key as keyof RegisterForm, {
+                            type: "server",
+                            message: value
+                        })
+                    })
+                } else if (response.error === "Email already registered") {
+                    setError("email", {
+                        type: "server",
+                        message: response.message || "Email sudah terdaftar"
+                    })
+                } else {
+                    setGeneralError(response.message || response.error || "Pendaftaran gagal. Silakan coba lagi.")
+                }
+            }
+        },
+        onError: (error: any) => {
+            setGeneralError(error.message || "Terjadi kesalahan pada server. Silakan coba lagi nanti.")
+        }
+    })
+
     const onSubmit = (data: RegisterForm) => {
-        console.log("Register Data:", data)
-        // Mock register success
-        navigate("/login")
+        setGeneralError(null)
+        const { terms, ...registerData } = data
+        mutation.mutate(registerData)
     }
+
+
 
     return (
         <div className="min-h-screen bg-background flex">
@@ -52,7 +101,7 @@ export default function Register() {
                         <BenefitItem
                             icon={<ShoppingBag className="w-6 h-6 text-background" />}
                             title="Diskon Raket Tennis"
-                            desc="Potongan harga khusus untuk pembelian raket dan perlengkapan lainnya di pro-shop."
+                            desc="Potongan harga khusus for pembelian raket dan perlengkapan lainnya di pro-shop."
                         />
                         <BenefitItem
                             icon={<Users className="w-6 h-6 text-background" />}
@@ -78,6 +127,13 @@ export default function Register() {
                 <div className="max-w-md mx-auto w-full">
                     <h2 className="text-3xl font-bold text-white mb-2">Daftar Member Tennis</h2>
                     <p className="text-gray-400 mb-8">Bergabunglah dengan komunitas tennis kami dan mulai asah kemampuan Anda.</p>
+
+                    {generalError && (
+                        <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-sm mb-6 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                            {generalError}
+                        </div>
+                    )}
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         <InputGroup error={errors.fullName?.message}>
@@ -107,22 +163,6 @@ export default function Register() {
                                     className={cn(
                                         "w-full bg-[#16282a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
                                         errors.email && "border-red-500 focus:ring-red-500"
-                                    )}
-                                />
-                            </div>
-                        </InputGroup>
-
-                        <InputGroup error={errors.phone?.message}>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">Nomor Telepon</label>
-                            <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                <input
-                                    {...register("phone")}
-                                    type="tel"
-                                    placeholder="+62 812 3456 7890"
-                                    className={cn(
-                                        "w-full bg-[#16282a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
-                                        errors.phone && "border-red-500 focus:ring-red-500"
                                     )}
                                 />
                             </div>
@@ -166,9 +206,22 @@ export default function Register() {
                         </div>
                         {errors.terms && <p className="text-red-500 text-xs mt-1">{errors.terms.message}</p>}
 
-                        <button type="submit" className="w-full bg-primary text-background font-bold py-3.5 rounded-lg hover:bg-primary/90 transition-all mt-4 flex items-center justify-center gap-2">
-                            Daftar Sekarang
-                            <ArrowRight className="w-5 h-5" />
+                        <button
+                            type="submit"
+                            disabled={mutation.isPending}
+                            className="w-full bg-primary text-background font-bold py-3.5 rounded-lg hover:bg-primary/90 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {mutation.isPending ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                                    Mendaftarkan...
+                                </>
+                            ) : (
+                                <>
+                                    Daftar Sekarang
+                                    <ArrowRight className="w-5 h-5" />
+                                </>
+                            )}
                         </button>
                     </form>
 

@@ -1,17 +1,40 @@
-import { Link, useParams } from "react-router-dom"
-import { Calendar, Clock, Download, CheckCircle, ExternalLink, User, MapPin, ArrowLeft } from "lucide-react"
+import { useParams, useNavigate, Link } from "react-router-dom"
+import { Calendar, Clock, Download, CheckCircle, ExternalLink, User, MapPin, ArrowLeft, XCircle, RefreshCcw } from "lucide-react"
+import { useBookingStore } from "./booking.store"
+import { cn } from "../../lib/utils";
 
 export default function BookingDetailPage() {
     const { id } = useParams()
+    const navigate = useNavigate();
+    const { bookingHistory } = useBookingStore();
+
+    const booking = bookingHistory.find(b => b.id === id) || {
+        id: id || "0892",
+        courtName: "Emerald Tennis Center",
+        courtType: "Lapangan Indoor 02",
+        date: "11 Feb 2026",
+        timeRange: "19:00 - 21:00 (2 Jam)",
+        totalPrice: 505000,
+        status: 'SELESAI',
+        image: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop",
+        courtPrice: 300000,
+        coachPrice: 150000,
+        equipmentPrice: 50000,
+        serviceFee: 5000,
+        coachName: "Coach Andi",
+        equipments: [{ name: "Wilson Blade v8", quantity: 2, price: 50000 }]
+    };
+
+
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             {/* Breadcrumb */}
             <div className="mb-6">
                 <div className="text-sm text-gray-400 flex items-center gap-2 mb-4">
-                    <Link to="/" className="hover:text-white flex items-center gap-1">
+                    <button onClick={() => navigate(-1)} className="hover:text-white flex items-center gap-1">
                         <ArrowLeft className="w-4 h-4" /> Kembali
-                    </Link>
+                    </button>
                     <div className="flex-1" />
                     <span>Riwayat</span>
                     <span>&rsaquo;</span>
@@ -22,13 +45,18 @@ export default function BookingDetailPage() {
                 <div className="bg-[#16282a] border border-gray-800 rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-bold text-white mb-1">Detail Riwayat Pesanan</h1>
-                        <p className="text-gray-400 text-sm">ID Pesanan: #SC-20231024-{id || "0892"}</p>
+                        <p className="text-gray-400 text-sm">ID Pesanan: #SC-20260211-{booking.id}</p>
                     </div>
                     <div className="text-right">
-                        <div className="inline-flex items-center px-3 py-1 bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold rounded-full mb-2">
-                            SELESAI
+                        <div className={cn(
+                            "inline-flex items-center px-3 py-1 text-xs font-bold rounded-full mb-2 border",
+                            booking.status === 'SELESAI' ? "bg-green-500/10 border-green-500/30 text-green-400" :
+                                booking.status === 'DIBATALKAN' ? "bg-red-500/10 border-red-500/30 text-red-400" :
+                                    "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
+                        )}>
+                            {booking.status}
                         </div>
-                        <div className="text-xs text-gray-500">Dipesan pada 20 Okt 2023, 14:20</div>
+                        <div className="text-xs text-gray-500">Dipesan pada 7 Feb 2026, 14:20</div>
                     </div>
                 </div>
             </div>
@@ -45,24 +73,20 @@ export default function BookingDetailPage() {
 
                         <div className="flex gap-4 items-start">
                             <div className="w-20 h-20 bg-teal-800/20 rounded-lg flex items-center justify-center border border-teal-800/30 flex-shrink-0">
-                                {/* Mock Logo */}
-                                <div className="text-center">
-                                    <div className="text-xs font-bold text-primary">EMERALD</div>
-                                    <div className="text-[8px] text-teal-300">TENNIS CENTER</div>
-                                </div>
+                                <img src={booking.image} alt={booking.courtName} className="w-full h-full object-cover rounded-lg" />
                             </div>
                             <div>
-                                <h3 className="font-bold text-white text-lg">Emerald Tennis Center</h3>
-                                <p className="text-gray-400 text-sm mb-3">Lapangan Indoor 02</p>
+                                <h3 className="font-bold text-white text-lg">{booking.courtName}</h3>
+                                <p className="text-gray-400 text-sm mb-3">{booking.courtType}</p>
 
                                 <div className="flex flex-col gap-2">
                                     <div className="flex items-center gap-2 bg-[#0d1b1e] px-4 py-2 rounded-lg border border-gray-700">
                                         <Calendar className="w-4 h-4 text-primary" />
-                                        <span className="text-sm text-gray-200">24 Okt 2023</span>
+                                        <span className="text-sm text-gray-200">{booking.date}</span>
                                     </div>
                                     <div className="flex items-center gap-2 bg-[#0d1b1e] px-4 py-2 rounded-lg border border-gray-700">
                                         <Clock className="w-4 h-4 text-primary" />
-                                        <span className="text-sm text-gray-200">19:00 - 21:00 (2 Jam)</span>
+                                        <span className="text-sm text-gray-200">{booking.timeRange}</span>
                                     </div>
                                 </div>
                             </div>
@@ -70,36 +94,42 @@ export default function BookingDetailPage() {
                     </div>
 
                     {/* Addons */}
-                    <div className="bg-[#16282a] border border-gray-800 rounded-2xl p-6">
-                        <div className="flex items-center gap-2 mb-4 text-primary font-bold">
-                            <div className="w-5 h-5 flex items-center justify-center border border-primary text-xs rounded">+</div>
-                            <h2>Layanan Tambahan</h2>
-                        </div>
-
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-4 bg-[#0d1b1e] p-4 rounded-xl border border-gray-800">
-                                <div className="w-10 h-10 rounded-full bg-teal-900/30 flex items-center justify-center text-primary">
-                                    <User className="w-5 h-5" />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="font-bold text-white text-sm">Pelatih (Coach Andi)</div>
-                                    <div className="text-xs text-gray-500">Sesi Latihan Pro</div>
-                                </div>
-                                <div className="font-bold text-white">Rp 150.000</div>
+                    {(booking.coachName || (booking.equipments && booking.equipments.length > 0)) && (
+                        <div className="bg-[#16282a] border border-gray-800 rounded-2xl p-6">
+                            <div className="flex items-center gap-2 mb-4 text-primary font-bold">
+                                <div className="w-5 h-5 flex items-center justify-center border border-primary text-xs rounded">+</div>
+                                <h2>Layanan Tambahan</h2>
                             </div>
 
-                            <div className="flex items-center gap-4 bg-[#0d1b1e] p-4 rounded-xl border border-gray-800">
-                                <div className="w-10 h-10 rounded-full bg-teal-900/30 flex items-center justify-center text-primary">
-                                    <div className="w-5 h-5 flex items-center justify-center">R</div>
-                                </div>
-                                <div className="flex-1">
-                                    <div className="font-bold text-white text-sm">Sewa Raket (2 unit)</div>
-                                    <div className="text-xs text-gray-500">Wilson Blade v8</div>
-                                </div>
-                                <div className="font-bold text-white">Rp 50.000</div>
+                            <div className="space-y-3">
+                                {booking.coachName && (
+                                    <div className="flex items-center gap-4 bg-[#0d1b1e] p-4 rounded-xl border border-gray-800">
+                                        <div className="w-10 h-10 rounded-full bg-teal-900/30 flex items-center justify-center text-primary">
+                                            <User className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="font-bold text-white text-sm">Pelatih ({booking.coachName})</div>
+                                            <div className="text-xs text-gray-500">Sesi Latihan Pro</div>
+                                        </div>
+                                        <div className="font-bold text-white">Rp {booking.coachPrice.toLocaleString('id-ID')}</div>
+                                    </div>
+                                )}
+
+                                {booking.equipments?.map((item, idx) => (
+                                    <div key={idx} className="flex items-center gap-4 bg-[#0d1b1e] p-4 rounded-xl border border-gray-800">
+                                        <div className="w-10 h-10 rounded-full bg-teal-900/30 flex items-center justify-center text-primary">
+                                            <div className="w-5 h-5 flex items-center justify-center">E</div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="font-bold text-white text-sm">{item.name} ({item.quantity} unit)</div>
+                                            <div className="text-xs text-gray-500">Pilihan Peralatan</div>
+                                        </div>
+                                        <div className="font-bold text-white">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Payment Details */}
                     <div className="bg-[#16282a] border border-gray-800 rounded-2xl p-6">
@@ -112,9 +142,12 @@ export default function BookingDetailPage() {
                                     <div className="text-xs text-gray-500">Bank Central Asia</div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-1 text-primary text-sm font-medium">
+                            <div className={cn(
+                                "flex items-center gap-1 text-sm font-medium",
+                                booking.status === 'DIBATALKAN' ? "text-gray-500" : "text-primary"
+                            )}>
                                 <CheckCircle className="w-4 h-4" />
-                                Terbayar
+                                {booking.status === 'DIBATALKAN' ? 'Dibatalkan' : 'Terbayar'}
                             </div>
                         </div>
                     </div>
@@ -127,26 +160,30 @@ export default function BookingDetailPage() {
 
                         <div className="space-y-3 text-sm mb-6 border-b border-gray-700 border-dashed pb-6">
                             <div className="flex justify-between items-center text-gray-300">
-                                <span className="w-24">Sewa Lapangan (2 Jam)</span>
-                                <span className="font-bold text-white">Rp 300.000</span>
+                                <span>Sewa Lapangan</span>
+                                <span className="font-bold text-white">Rp {booking.courtPrice.toLocaleString('id-ID')}</span>
                             </div>
-                            <div className="flex justify-between items-center text-gray-300">
-                                <span>Pelatih (Coach Andi)</span>
-                                <span className="font-bold text-white">Rp 150.000</span>
-                            </div>
-                            <div className="flex justify-between items-center text-gray-300">
-                                <span>Sewa Alat (2 Unit)</span>
-                                <span className="font-bold text-white">Rp 50.000</span>
-                            </div>
+                            {booking.coachName && (
+                                <div className="flex justify-between items-center text-gray-300">
+                                    <span>Pelatih</span>
+                                    <span className="font-bold text-white">Rp {booking.coachPrice.toLocaleString('id-ID')}</span>
+                                </div>
+                            )}
+                            {(booking.equipments?.length || 0) > 0 && (
+                                <div className="flex justify-between items-center text-gray-300">
+                                    <span>Sewa Alat</span>
+                                    <span className="font-bold text-white">Rp {booking.equipmentPrice.toLocaleString('id-ID')}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between items-center text-primary">
                                 <span>Biaya Layanan</span>
-                                <span className="font-bold">Rp 5.000</span>
+                                <span className="font-bold">Rp {booking.serviceFee.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
 
                         <div className="text-center mb-0">
                             <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">TOTAL PEMBAYARAN</div>
-                            <div className="text-3xl font-bold text-primary">Rp 505.000</div>
+                            <div className="text-3xl font-bold text-primary">Rp {booking.totalPrice.toLocaleString('id-ID')}</div>
                         </div>
                     </div>
 
@@ -156,6 +193,26 @@ export default function BookingDetailPage() {
                         </button>
                         <button className="w-full py-3 bg-[#16282a] border border-gray-700 text-white font-medium rounded-xl hover:bg-[#1c3235] transition-all flex items-center justify-center gap-2">
                             <Download className="w-4 h-4" /> Download Invoice
+                        </button>
+
+                        {/* Order Actions */}
+                        <Link
+                            to={`/booking/${booking.id}/cancel`}
+                            className={cn(
+                                "w-full py-3 font-bold rounded-xl transition-all flex items-center justify-center gap-2 border",
+                                booking.status === 'DIBATALKAN'
+                                    ? "bg-gray-800/50 border-gray-700 text-gray-500 cursor-not-allowed pointer-events-none"
+                                    : "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20"
+                            )}
+                        >
+                            <XCircle className="w-4 h-4" /> Batalkan Pesanan
+                        </Link>
+
+                        <button
+                            onClick={() => navigate(`/booking/${booking.id}/refund`)}
+                            className="w-full py-3 bg-blue-500/10 border border-blue-500/30 text-blue-400 font-bold rounded-xl hover:bg-blue-500/20 transition-all flex items-center justify-center gap-2"
+                        >
+                            <RefreshCcw className="w-4 h-4" /> Ajukan Refund
                         </button>
                     </div>
 

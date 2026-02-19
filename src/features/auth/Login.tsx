@@ -2,10 +2,13 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Link, useNavigate } from "react-router-dom"
-import { Eye, EyeOff, Lock, Mail, ArrowRight } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "../../lib/utils"
 import { useAuthStore } from "./auth.store"
+import { useMutation } from "@tanstack/react-query"
+import { authService } from "./auth.service"
+import type { LoginRequest } from "./auth.service"
+import { Eye, EyeOff, Lock, Mail, ArrowRight, Loader2, AlertCircle } from "lucide-react"
 
 const loginSchema = z.object({
     email: z.string().email("Email tidak valid"),
@@ -17,19 +20,67 @@ type LoginForm = z.infer<typeof loginSchema>
 
 export default function Login() {
     const navigate = useNavigate()
-    const { login } = useAuthStore()
+    const { login: storeLogin, token } = useAuthStore()
     const [showPassword, setShowPassword] = useState(false)
+    const [generalError, setGeneralError] = useState<string | null>(null)
+
+    // Redirect if already logged in
+    useEffect(() => {
+        if (token) {
+            navigate("/")
+        }
+    }, [token, navigate])
 
     const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
         resolver: zodResolver(loginSchema)
     })
 
+    const mutation = useMutation({
+        mutationFn: (data: LoginRequest) => authService.login(data),
+        onSuccess: (response, variables) => {
+            if (response.success && response.data) {
+                // Check if OTP is required
+                if (response.data.requiresOtp) {
+                    navigate("/verify", {
+                        state: {
+                            userId: response.data.userId,
+                            email: response.data.email,
+                            type: "login_otp" // Identify this is a login OTP flow
+                        }
+                    })
+                    return
+                }
+
+                const { accessToken, refreshToken, userId, ...rest } = response.data
+                storeLogin(accessToken!, refreshToken!, { id: userId, ...rest })
+                navigate("/")
+            } else {
+                const errorMessage = response.message || response.error || ""
+                if (
+                    errorMessage === "Akun belum aktif. Silakan verifikasi email terlebih dahulu" ||
+                    errorMessage === "Email ini sudah digunakan"
+                ) {
+                    navigate("/resend-verification", {
+                        state: { email: variables.email }
+                    })
+                    return
+                }
+                setGeneralError(errorMessage || "Login gagal. Periksa kembali email dan kata sandi Anda.")
+            }
+        },
+        onError: (err: any) => {
+            setGeneralError(err.message || "Terjadi kesalahan pada server. Silakan coba lagi nanti.")
+        }
+    })
+
     const onSubmit = (data: LoginForm) => {
-        console.log("Login Data:", data)
-        // Mock login success
-        login("mock-token", { name: "User", email: data.email })
-        navigate("/")
+        setGeneralError(null)
+        mutation.mutate({
+            email: data.email,
+            password: data.password
+        })
     }
+
 
     return (
         <div className="min-h-screen bg-background flex">
@@ -64,6 +115,13 @@ export default function Login() {
                         <p className="text-gray-400">Masuk untuk mengakses jadwal dan komunitas Anda.</p>
                     </div>
 
+                    {generalError && (
+                        <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl text-sm mb-6 flex items-center gap-3">
+                            <AlertCircle className="w-5 h-5 shrink-0" />
+                            <p className="font-medium">{generalError}</p>
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         <InputGroup error={errors.email?.message}>
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
@@ -73,8 +131,9 @@ export default function Login() {
                                     {...register("email")}
                                     type="email"
                                     placeholder="contoh@email.com"
+                                    disabled={mutation.isPending}
                                     className={cn(
-                                        "w-full bg-[#16282a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
+                                        "w-full bg-[#16282a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-50",
                                         errors.email && "border-red-500 focus:ring-red-500"
                                     )}
                                 />
@@ -84,16 +143,18 @@ export default function Login() {
                         <InputGroup error={errors.password?.message}>
                             <div className="flex justify-between items-center mb-1.5">
                                 <label className="block text-sm font-medium text-gray-300">Kata Sandi</label>
-                                <a href="#" className="text-xs text-primary hover:underline">Lupa Kata Sandi?</a>
+                                <Link to="/forgot-password" title="Forgot Password" id="forgot-password-link" className="text-xs text-primary hover:underline">Lupa Kata Sandi?</Link>
                             </div>
+
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                                 <input
                                     {...register("password")}
                                     type={showPassword ? "text" : "password"}
                                     placeholder="Masukkan kata sandi"
+                                    disabled={mutation.isPending}
                                     className={cn(
-                                        "w-full bg-[#16282a] border border-gray-700 rounded-lg py-3 pl-10 pr-10 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all",
+                                        "w-full bg-[#16282a] border border-gray-700 rounded-lg py-3 pl-10 pr-10 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-50",
                                         errors.password && "border-red-500 focus:ring-red-500"
                                     )}
                                 />
@@ -107,20 +168,25 @@ export default function Login() {
                             </div>
                         </InputGroup>
 
-                        <div className="flex items-center gap-3 pt-1">
-                            <input
-                                {...register("remember")}
-                                id="remember"
-                                type="checkbox"
-                                className="w-4 h-4 rounded border-gray-600 bg-[#16282a] text-primary focus:ring-primary/50"
-                            />
-                            <label htmlFor="remember" className="text-sm text-gray-400">Inventory saya tetap masuk</label>
-                        </div>
 
-                        <button type="submit" className="w-full bg-primary text-background font-bold py-3.5 rounded-lg hover:bg-primary/90 transition-all mt-4 flex items-center justify-center gap-2">
-                            Masuk Sekarang
-                            <ArrowRight className="w-5 h-5" />
+                        <button
+                            type="submit"
+                            disabled={mutation.isPending}
+                            className="w-full bg-primary text-background font-bold py-3.5 rounded-lg hover:bg-primary/90 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {mutation.isPending ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Masuk...
+                                </>
+                            ) : (
+                                <>
+                                    Masuk Sekarang
+                                    <ArrowRight className="w-5 h-5" />
+                                </>
+                            )}
                         </button>
+
                     </form>
 
                     <p className="text-center text-gray-400 text-sm mt-8">
