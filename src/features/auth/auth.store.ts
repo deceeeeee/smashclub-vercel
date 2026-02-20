@@ -1,5 +1,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
+import { authService } from "./auth.service"
 
 type AuthState = {
     token: string | null
@@ -13,6 +14,7 @@ type AuthState = {
     toggleProfile: (open?: boolean) => void
     updateUser: (user: any) => void
     updateBalance: (amount: number) => void
+    fetchWalletBalance: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -22,7 +24,7 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: null,
             user: null,
             isProfileOpen: false,
-            walletBalance: 250000, // Mock initial balance
+            walletBalance: 0,
             login: (token, refreshToken, user) => set({ token, refreshToken, user }),
             logout: () => {
                 set({ token: null, refreshToken: null, user: null, isProfileOpen: false });
@@ -41,6 +43,16 @@ export const useAuthStore = create<AuthState>()(
             updateBalance: (amount) => set((state) => ({
                 walletBalance: state.walletBalance + amount
             })),
+            fetchWalletBalance: async () => {
+                try {
+                    const response = await authService.getWalletBalance()
+                    if (response.success && response.data) {
+                        set({ walletBalance: response.data.userBalance })
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch wallet balance:", error)
+                }
+            },
         }),
         {
             name: "auth-storage",

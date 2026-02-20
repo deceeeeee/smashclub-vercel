@@ -104,3 +104,24 @@ export interface ChangePasswordResponse {
     message: string
     success: boolean
 }
+
+export interface WalletLog {
+    id: number
+    previousBalance: number
+    currentBalance: number
+    usageValue: number
+    usageType: boolean
+    refID: string
+    createdAt: string
+}
+
+export interface WalletBalanceResponse {
+    data?: {
+        walletLogs: WalletLog[]
+        userBalance: number
+    }
+    success: boolean
+    message: string
+    status: number
+    timestamp: string
+}

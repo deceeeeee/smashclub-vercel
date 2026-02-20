@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X, User, LogOut, Calendar, ShoppingCart, Settings, ChevronRight, Wallet } from 'lucide-react';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -6,9 +7,15 @@ import { useMutation } from '@tanstack/react-query';
 import { authService } from '../../features/auth/auth.service';
 
 export default function ProfileDrawer() {
-    const { user, isProfileOpen, toggleProfile, logout, walletBalance, refreshToken } = useAuthStore();
+    const { user, isProfileOpen, toggleProfile, logout, walletBalance, refreshToken, fetchWalletBalance } = useAuthStore();
     const navigate = useNavigate();
     const location = useLocation();
+
+    useEffect(() => {
+        if (isProfileOpen) {
+            fetchWalletBalance();
+        }
+    }, [isProfileOpen, fetchWalletBalance]);
 
     const logoutMutation = useMutation({
         mutationFn: () => authService.logout(refreshToken || ""),
