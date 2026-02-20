@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Heart, Minus, Plus, ChevronLeft, BarChart2 } from 'lucide-react';
+import { ShoppingCart, Heart, Minus, Plus, ChevronLeft, BarChart2, User } from 'lucide-react';
 import { useShopStore } from '../../features/shop/shop.store';
 import { useAuthStore } from '../../features/auth/auth.store';
 import type { ProductVariant } from '../../features/shop/shop.types';
@@ -220,30 +220,47 @@ export default function ProductDetailPage() {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                                <button
-                                    onClick={handleAddToCart}
-                                    disabled={isAdding}
-                                    className="flex-1 bg-primary text-background font-black py-4 px-8 rounded-xl flex items-center justify-center gap-3 hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isAdding ? (
-                                        <div className="w-5 h-5 border-2 border-background border-t-transparent rounded-full animate-spin" />
-                                    ) : (
-                                        <ShoppingCart className="w-5 h-5 fill-current" />
-                                    )}
-                                    {isAdding ? 'Menambahkan...' : 'Tambah ke Keranjang'}
-                                </button>
-                                <button className="p-4 bg-card/30 border border-gray-800 rounded-xl text-gray-400 hover:text-red-500 hover:border-red-500/50 transition-all group">
-                                    <Heart className="w-6 h-6 group-hover:fill-current transition-colors" />
-                                </button>
-                            </div>
+                            {token ? (
+                                <>
+                                    <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                                        <button
+                                            onClick={handleAddToCart}
+                                            disabled={isAdding}
+                                            className="flex-1 bg-primary text-background font-black py-4 px-8 rounded-xl flex items-center justify-center gap-3 hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isAdding ? (
+                                                <div className="w-5 h-5 border-2 border-background border-t-transparent rounded-full animate-spin" />
+                                            ) : (
+                                                <ShoppingCart className="w-5 h-5 fill-current" />
+                                            )}
+                                            {isAdding ? 'Menambahkan...' : 'Tambah ke Keranjang'}
+                                        </button>
+                                        <button className="p-4 bg-card/30 border border-gray-800 rounded-xl text-gray-400 hover:text-red-500 hover:border-red-500/50 transition-all group">
+                                            <Heart className="w-6 h-6 group-hover:fill-current transition-colors" />
+                                        </button>
+                                    </div>
 
-                            <button
-                                onClick={handleBuyNow}
-                                className="w-full bg-white text-background font-black py-4 px-8 rounded-xl hover:bg-gray-100 transition-all active:scale-[0.98]"
-                            >
-                                Beli Sekarang
-                            </button>
+                                    <button
+                                        onClick={handleBuyNow}
+                                        className="w-full bg-white text-background font-black py-4 px-8 rounded-xl hover:bg-gray-100 transition-all active:scale-[0.98]"
+                                    >
+                                        Beli Sekarang
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="space-y-4 pt-4">
+                                    <button
+                                        onClick={() => navigate('/login')}
+                                        className="w-full bg-primary text-background font-black py-4 px-8 rounded-xl flex items-center justify-center gap-3 hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg shadow-primary/20"
+                                    >
+                                        <User className="w-5 h-5" />
+                                        Login untuk Belanja
+                                    </button>
+                                    <p className="text-center text-sm text-gray-400">
+                                        Anda harus masuk ke akun Anda untuk dapat melakukan pembelian.
+                                    </p>
+                                </div>
+                            )}
 
                             {/* Specifications */}
                             {product.specifications && (

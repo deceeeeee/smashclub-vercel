@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { ShoppingBag, ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ShoppingBag } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useShopStore } from '../../features/shop/shop.store';
 import { useAuthStore } from '../../features/auth/auth.store';
 import type { Product } from '../../features/shop/shop.types';
 
 export default function StorePage() {
-    const { products, addToCart, addToCartAPI, fetchProducts, isLoading, error } = useShopStore();
+    const navigate = useNavigate();
+    const { products, addToCartAPI, fetchProducts, isLoading, error } = useShopStore();
     const { token, user } = useAuthStore();
     const [activeCategory, setActiveCategory] = useState<string>('Semua Produk');
 
@@ -123,6 +124,7 @@ export default function StorePage() {
                                             key={product.id}
                                             product={product}
                                             formatPrice={formatPrice}
+                                            token={token}
                                             onAddToCart={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
@@ -132,7 +134,7 @@ export default function StorePage() {
                                                         addToCartAPI(user.id.toString(), defaultVariant.id, 1);
                                                     }
                                                 } else {
-                                                    addToCart(product);
+                                                    navigate('/login');
                                                 }
                                             }}
                                         />
@@ -150,11 +152,13 @@ export default function StorePage() {
 function ProductCard({
     product,
     formatPrice,
-    onAddToCart
+    onAddToCart,
+    token
 }: {
     product: Product;
     formatPrice: (p: number) => string;
     onAddToCart: (e: React.MouseEvent) => void;
+    token: string | null;
 }) {
     return (
         <Link to={`/shop/${product.id}`} className="group bg-card/20 border border-gray-800 rounded-2xl overflow-hidden hover:border-gray-700 transition-all flex flex-col h-full">
@@ -192,7 +196,7 @@ function ProductCard({
                     className="w-full mt-4 bg-primary text-background font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-[0.98]"
                 >
                     <ShoppingBag className="w-4 h-4 fill-current" />
-                    Tambah ke Keranjang
+                    {token ? 'Tambah ke Keranjang' : 'Login untuk Belanja'}
                 </button>
             </div>
         </Link>
