@@ -44,21 +44,25 @@ export default function Navbar() {
 
                 {/* Right Actions */}
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => toggleCart()}
-                        className="relative text-gray-300 hover:text-white p-2 rounded-full hover:bg-gray-800 transition-colors"
-                    >
-                        <ShoppingBag className="w-5 h-5" />
-                        {totalItems > 0 && (
-                            <span className="absolute top-0 right-0 w-4 h-4 bg-primary text-background text-[10px] font-bold rounded-full flex items-center justify-center">
-                                {totalItems}
-                            </span>
-                        )}
-                    </button>
+                    {token && (
+                        <>
+                            <button
+                                onClick={() => toggleCart()}
+                                className="relative text-gray-300 hover:text-white p-2 rounded-full hover:bg-gray-800 transition-colors"
+                            >
+                                <ShoppingBag className="w-5 h-5" />
+                                {totalItems > 0 && (
+                                    <span className="absolute top-0 right-0 w-4 h-4 bg-primary text-background text-[10px] font-bold rounded-full flex items-center justify-center">
+                                        {totalItems}
+                                    </span>
+                                )}
+                            </button>
 
-                    <button className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-gray-800 transition-colors">
-                        <Bell className="w-5 h-5" />
-                    </button>
+                            <button className="text-gray-300 hover:text-white p-2 rounded-full hover:bg-gray-800 transition-colors">
+                                <Bell className="w-5 h-5" />
+                            </button>
+                        </>
+                    )}
 
                     <button
                         onClick={handleUserClick}
