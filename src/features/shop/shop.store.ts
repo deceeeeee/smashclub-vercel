@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Product, CartItem, ProductAPI } from './shop.types';
+import type { Product, CartItem, ProductAPI, ProductVariant } from './shop.types';
 import { shopService } from './shop.service';
+import { useAuthStore } from '../auth/auth.store';
 
 export interface ShopOrder {
     id: string;
@@ -23,19 +24,35 @@ interface ShopState {
     orderHistory: ShopOrder[];
     isLoading: boolean;
     error: string | null;
+    buyNowProduct: Product | null;
+    buyNowStartingVariant: ProductVariant | null;
+    buyNowStartingQuantity: number;
+    isBuyNowModalOpen: boolean;
+    addToCartProduct: Product | null;
+    addToCartStartingVariant: ProductVariant | null;
+    addToCartStartingQuantity: number;
+    isAddToCartModalOpen: boolean;
     fetchProducts: () => Promise<void>;
     fetchProductById: (id: string) => Promise<void>;
     fetchCart: () => Promise<void>;
-    addToCart: (product: Product) => void;
-    addToCartAPI: (userId: string, variantId: number, quantity: number) => Promise<void>;
+    addToCart: (product: Product, quantity?: number) => void;
+    addToCartAPI: (variantId: number, quantity: number) => Promise<void>;
     removeFromCart: (productId: string) => void;
+    removeFromCartAPI: (cartItemId: number) => Promise<void>;
     updateQuantity: (productId: string, quantity: number) => void;
+    updateQuantityAPI: (cartItemId: number, quantity: number) => Promise<void>;
     clearCart: () => void;
+    clearCartAPI: () => Promise<void>;
     toggleCart: (open?: boolean) => void;
     addOrder: (order: ShopOrder) => void;
     cancelOrder: (orderId: string) => void;
     getTotalItems: () => number;
     getSubtotal: () => number;
+    buyNowAPI: (variantId: number, quantity: number) => Promise<any>;
+    openBuyNowModal: (product: Product, variant?: ProductVariant, quantity?: number) => void;
+    closeBuyNowModal: () => void;
+    openAddToCartModal: (product: Product, variant?: ProductVariant, quantity?: number) => void;
+    closeAddToCartModal: () => void;
 }
 
 export const MOCK_PRODUCTS: Product[] = [
@@ -165,6 +182,64 @@ export const MOCK_PRODUCTS: Product[] = [
     },
 ];
 
+const mapAPICartItems = (items: any[]): CartItem[] => {
+    return items
+        .map((apiItem: any, index: number) => {
+            if (!apiItem) return null;
+
+            // Item ID — backend may use id or cartItemId
+            const rawId = apiItem.cartItemId ?? apiItem.id ?? apiItem.productId;
+            const id = rawId != null ? rawId.toString() : `item-${index}`;
+
+            // Variant data — prioritized from new docs structure
+            const variant = apiItem.variant ?? apiItem.productVariant ?? null;
+            const variantName = variant?.variantName ?? apiItem.variantName ?? null;
+
+            // Product name extraction
+            const productName =
+                apiItem.productName ??
+                apiItem.product?.productName ??
+                variant?.product?.productName ??
+                "Produk";
+
+            const displayName = variantName && !productName.includes(variantName)
+                ? `${productName} - ${variantName}`
+                : productName;
+
+            // Price: prioritize variant price from the new structure
+            const price =
+                apiItem.priceAtAdd ??
+                variant?.price ??
+                apiItem.price ??
+                0;
+
+            // Image: prioritize variant image link
+            const image =
+                variant?.variantImgLink ??
+                apiItem.imgLink ??
+                apiItem.product?.defaultImgLink ??
+                variant?.product?.defaultImgLink ??
+                "";
+
+            // Category
+            const category =
+                apiItem.category ??
+                apiItem.product?.category ??
+                variant?.product?.category ??
+                "Kategori";
+
+            return {
+                id,
+                name: displayName,
+                category,
+                price,
+                image,
+                quantity: apiItem.quantity ?? 1,
+            } as CartItem;
+        })
+        .filter(Boolean) as CartItem[];
+};
+
 export const useShopStore = create<ShopState>()(
     persist(
         (set, get) => ({
@@ -174,6 +249,14 @@ export const useShopStore = create<ShopState>()(
             orderHistory: [],
             isLoading: false,
             error: null,
+            buyNowProduct: null,
+            buyNowStartingVariant: null,
+            buyNowStartingQuantity: 1,
+            isBuyNowModalOpen: false,
+            addToCartProduct: null,
+            addToCartStartingVariant: null,
+            addToCartStartingQuantity: 1,
+            isAddToCartModalOpen: false,
             fetchProducts: async () => {
                 set({ isLoading: true, error: null });
                 try {
@@ -228,51 +311,81 @@ export const useShopStore = create<ShopState>()(
             fetchCart: async () => {
                 set({ isLoading: true, error: null });
                 try {
-                    const response = await shopService.getCart();
-                    if (response.success) {
-                        const mappedItems: CartItem[] = response.data.items.map((apiItem: any) => ({
-                            id: apiItem.id.toString(),
-                            name: apiItem.productName || apiItem.product?.productName || "Product",
-                            category: apiItem.category || apiItem.product?.category || "Category",
-                            price: apiItem.price || apiItem.productVariant?.price || 0,
-                            image: apiItem.imgLink || apiItem.productVariant?.variantImgLink || apiItem.product?.defaultImgLink || "",
-                            quantity: apiItem.quantity,
-                        }));
-                        set({ cart: mappedItems, isLoading: false });
+                    const response = await shopService.getCart() as any;
+                    const cartData = response?.data;
+                    const items: any[] = cartData?.items ?? response?.items ?? [];
+
+                    const isSuccess =
+                        response?.success === true ||
+                        response?.status === 200 ||
+                        (cartData?.cartId !== undefined);
+
+                    if (isSuccess) {
+                        const mappedItems = mapAPICartItems(items);
+                        set({ cart: mappedItems, isLoading: false, error: null });
+                    } else if (
+                        response?.status === 404 ||
+                        response?.message?.toLowerCase().includes('not found') ||
+                        response?.message?.toLowerCase().includes('no active cart')
+                    ) {
+                        set({ cart: [], isLoading: false, error: null });
                     } else {
-                        set({ error: response.message, isLoading: false });
+                        set({ error: response?.message || 'Gagal memuat keranjang', isLoading: false });
                     }
                 } catch (error: any) {
-                    set({ error: error.message || 'Failed to fetch cart', isLoading: false });
+                    if (error?.response?.status === 404) {
+                        set({ cart: [], isLoading: false, error: null });
+                    } else {
+                        set({ error: error.message || 'Terjadi kesalahan saat memuat keranjang', isLoading: false });
+                    }
                 }
             },
-            addToCartAPI: async (userId: string, variantId: number, quantity: number) => {
+            addToCartAPI: async (variantId: number, quantity: number) => {
                 set({ isLoading: true, error: null });
                 try {
-                    await shopService.addToCart({ userId, variantId, quantity });
-                    // After adding to cart, we should refresh the cart data
-                    await get().fetchCart();
-                    set({ isCartOpen: true, isLoading: false });
+                    const response = await shopService.addToCart({ variantId, quantity });
+                    // Backend returns the updated cart structure in AddToCartResponse
+                    if (response && response.items) {
+                        const mappedItems = mapAPICartItems(response.items);
+                        set({ cart: mappedItems, isLoading: false });
+                    } else {
+                        // Fallback: if items not returned, we might need to fetch
+                        await get().fetchCart();
+                    }
                 } catch (error: any) {
-                    set({ error: error.message || 'Failed to add item to cart', isLoading: false });
+                    set({ error: error.message || 'Gagal menambahkan ke keranjang', isLoading: false });
+                    throw error;
                 }
             },
-            addToCart: (product) => {
+            addToCart: (product, quantity = 1) => {
                 const cart = get().cart;
                 const existingItem = cart.find((item) => item.id === product.id);
                 if (existingItem) {
                     set({
                         cart: cart.map((item) =>
-                            item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+                            item.id === product.id ? { ...item, quantity: item.quantity + (quantity || 1) } : item
                         ),
                     });
                 } else {
-                    set({ cart: [...cart, { ...product, quantity: 1 }] });
+                    set({ cart: [...cart, { ...product, quantity: quantity || 1 }] });
                 }
                 set({ isCartOpen: true });
             },
             removeFromCart: (productId) => {
                 set({ cart: get().cart.filter((item) => item.id !== productId) });
+            },
+            removeFromCartAPI: async (cartItemId: number) => {
+                set({ isLoading: true, error: null });
+                try {
+                    await shopService.removeCartItem(cartItemId);
+                    // Update local state by removing the item
+                    set((state) => ({
+                        cart: state.cart.filter(item => item.id !== cartItemId.toString()),
+                        isLoading: false
+                    }));
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to remove item', isLoading: false });
+                }
             },
             updateQuantity: (productId, quantity) => {
                 if (quantity <= 0) {
@@ -285,7 +398,41 @@ export const useShopStore = create<ShopState>()(
                     ),
                 });
             },
+            updateQuantityAPI: async (cartItemId: number, quantity: number) => {
+                if (quantity <= 0) {
+                    await get().removeFromCartAPI(cartItemId);
+                    return;
+                }
+                set({ isLoading: true, error: null });
+                try {
+                    await shopService.updateCartItem(cartItemId, quantity);
+                    // Update local state quantity
+                    set((state) => ({
+                        cart: state.cart.map(item =>
+                            item.id === cartItemId.toString() ? { ...item, quantity } : item
+                        ),
+                        isLoading: false
+                    }));
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to update quantity', isLoading: false });
+                }
+            },
             clearCart: () => set({ cart: [] }),
+            clearCartAPI: async () => {
+                const token = useAuthStore.getState().token;
+                if (!token) {
+                    set({ cart: [] });
+                    return;
+                }
+
+                set({ isLoading: true, error: null });
+                try {
+                    await shopService.clearCart();
+                    set({ cart: [], isLoading: false });
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to clear cart', isLoading: false });
+                }
+            },
             toggleCart: (open) => set({ isCartOpen: open !== undefined ? open : !get().isCartOpen }),
             addOrder: (order) => set((state) => ({
                 orderHistory: [order, ...state.orderHistory],
@@ -298,6 +445,48 @@ export const useShopStore = create<ShopState>()(
             })),
             getTotalItems: () => get().cart.reduce((total, item) => total + item.quantity, 0),
             getSubtotal: () => get().cart.reduce((total, item) => total + item.price * item.quantity, 0),
+            buyNowAPI: async (variantId: number, quantity: number) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.buyNow({ variantId, quantity });
+                    if (response.message.includes('successfully')) {
+                        // Optionally clear cart or update order history
+                        // For now we just return the response
+                        set({ isLoading: false });
+                        return response;
+                    } else {
+                        set({ error: response.message, isLoading: false });
+                        return response;
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to buy product', isLoading: false });
+                    throw error;
+                }
+            },
+            openBuyNowModal: (product, variant, quantity) => set({
+                buyNowProduct: product,
+                buyNowStartingVariant: variant || (product.variants?.[0] || null),
+                buyNowStartingQuantity: quantity || 1,
+                isBuyNowModalOpen: true
+            }),
+            closeBuyNowModal: () => set({
+                buyNowProduct: null,
+                buyNowStartingVariant: null,
+                buyNowStartingQuantity: 1,
+                isBuyNowModalOpen: false
+            }),
+            openAddToCartModal: (product, variant, quantity) => set({
+                addToCartProduct: product,
+                addToCartStartingVariant: variant || (product.variants?.[0] || null),
+                addToCartStartingQuantity: quantity || 1,
+                isAddToCartModalOpen: true
+            }),
+            closeAddToCartModal: () => set({
+                addToCartProduct: null,
+                addToCartStartingVariant: null,
+                addToCartStartingQuantity: 1,
+                isAddToCartModalOpen: false
+            }),
         }),
         {
             name: 'smashclub-shop-storage',

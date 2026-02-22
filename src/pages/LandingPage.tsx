@@ -64,7 +64,7 @@ const LandingPage = () => {
                             </div>
                             <h3 className="text-xl font-bold mb-3">Booking Lapangan</h3>
                             <p className="text-slate-400 leading-relaxed text-sm">
-                                Pesa lapangan favorit Anda secara instan tanpa antri. Konfirmasi otomatis dan pembayaran mudah.
+                                Pesan lapangan favorit Anda secara instan tanpa antri. Konfirmasi otomatis dan pembayaran mudah.
                             </p>
                         </div>
 

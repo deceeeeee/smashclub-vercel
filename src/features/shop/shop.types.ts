@@ -88,10 +88,33 @@ export interface AddToCartRequest {
 }
 
 export interface AddToCartResponse {
+    // Cart data fields
     cartId: number;
     userId: string;
     items: any[];
     totalPrice: number;
     status: number;
     createdAt: string;
+    // Standard API wrapper fields
+    success?: boolean;
+    message?: string;
+    timestamp?: string;
 }
+
+export interface MessageResponse {
+    message: string;
+}
+
+export interface Order {
+    id: number;
+    user: string;
+    total_price: number;
+    status: number;
+    created_at: string;
+}
+
+export interface OrderResponse {
+    message: string;
+    order: Order;
+}
+
