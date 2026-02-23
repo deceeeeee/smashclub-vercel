@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { transactionService, type Transaction } from "./transaction.service"
+import { transactionService, type Transaction } from "../../features/booking/transaction.service"
 import dayjs from 'dayjs'
 import { Link } from "react-router-dom"
 import { Search, Loader2, CreditCard, ChevronRight, ArrowLeft, Filter } from "lucide-react"
