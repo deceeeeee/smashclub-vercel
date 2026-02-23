@@ -2,11 +2,12 @@ import { Link, useNavigate } from "react-router-dom"
 import { Bell, User, Menu, ShoppingBag } from "lucide-react"
 import { useShopStore } from "../../features/shop/shop.store"
 import { useAuthStore } from "../../features/auth/auth.store"
+import { cn } from "../../lib/utils"
 
 export default function Navbar() {
     const navigate = useNavigate();
     const { toggleCart, getTotalItems } = useShopStore();
-    const { token, toggleProfile } = useAuthStore();
+    const { token, user, toggleProfile } = useAuthStore();
     const totalItems = getTotalItems();
 
     const handleUserClick = () => {
@@ -59,8 +60,25 @@ export default function Navbar() {
                         <Bell className="w-5 h-5" />
                     </button>
 
-                    <button onClick={handleUserClick} className="bg-gray-800 p-1.5 rounded-full hover:bg-gray-700 transition-colors">
-                        <User className="w-5 h-5 text-gray-300" />
+                    <button
+                        onClick={handleUserClick}
+                        className={cn(
+                            "flex items-center gap-3 transition-all",
+                            token ? "bg-primary/10 pl-4 pr-1.5 py-1.5 rounded-full hover:bg-primary/20 border border-primary/20" : "bg-gray-800 p-1.5 rounded-full hover:bg-gray-700"
+                        )}
+                    >
+                        {token && user?.fullName && (
+                            <span className="text-sm font-bold text-primary hidden sm:block">
+                                {user.fullName.split(' ')[0]}
+                            </span>
+                        )}
+                        {token && user?.avatar ? (
+                            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-primary/20">
+                                <img src={user.avatar} alt={user.fullName} className="w-full h-full object-cover" />
+                            </div>
+                        ) : (
+                            <User className={cn("w-5 h-5", token ? "text-primary" : "text-gray-300")} />
+                        )}
                     </button>
 
                     <button className="md:hidden text-gray-300">

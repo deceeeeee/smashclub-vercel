@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Product, CartItem } from './types';
+import type { Product, CartItem, ProductAPI } from './shop.types';
+import { shopService } from './shop.service';
 
 export interface ShopOrder {
     id: string;
@@ -20,7 +21,13 @@ interface ShopState {
     isCartOpen: boolean;
     products: Product[];
     orderHistory: ShopOrder[];
+    isLoading: boolean;
+    error: string | null;
+    fetchProducts: () => Promise<void>;
+    fetchProductById: (id: string) => Promise<void>;
+    fetchCart: () => Promise<void>;
     addToCart: (product: Product) => void;
+    addToCartAPI: (userId: string, variantId: number, quantity: number) => Promise<void>;
     removeFromCart: (productId: string) => void;
     updateQuantity: (productId: string, quantity: number) => void;
     clearCart: () => void;
@@ -165,6 +172,91 @@ export const useShopStore = create<ShopState>()(
             isCartOpen: false,
             products: MOCK_PRODUCTS,
             orderHistory: [],
+            isLoading: false,
+            error: null,
+            fetchProducts: async () => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.getProducts();
+                    if (response.success) {
+                        const mappedProducts: Product[] = response.data.content.map((apiProduct: ProductAPI) => ({
+                            id: apiProduct.id.toString(),
+                            name: apiProduct.productName,
+                            category: apiProduct.category,
+                            price: apiProduct.productVariants[0]?.price || 0,
+                            image: apiProduct.defaultImgLink,
+                            description: apiProduct.productDesc,
+                            variants: apiProduct.productVariants
+                        }));
+                        set({ products: mappedProducts, isLoading: false });
+                    } else {
+                        set({ error: response.message, isLoading: false });
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to fetch products', isLoading: false });
+                }
+            },
+            fetchProductById: async (id: string) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.getProductById(id);
+                    if (response.success) {
+                        const apiProduct = response.data;
+                        const mappedProduct: Product = {
+                            id: apiProduct.id.toString(),
+                            name: apiProduct.productName,
+                            category: apiProduct.category,
+                            price: apiProduct.productVariants[0]?.price || 0,
+                            image: apiProduct.defaultImgLink,
+                            description: apiProduct.productDesc,
+                            variants: apiProduct.productVariants
+                        };
+
+                        set((state) => ({
+                            products: state.products.some(p => p.id === mappedProduct.id)
+                                ? state.products.map(p => p.id === mappedProduct.id ? mappedProduct : p)
+                                : [...state.products, mappedProduct],
+                            isLoading: false
+                        }));
+                    } else {
+                        set({ error: response.message, isLoading: false });
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to fetch product', isLoading: false });
+                }
+            },
+            fetchCart: async () => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.getCart();
+                    if (response.success) {
+                        const mappedItems: CartItem[] = response.data.items.map((apiItem: any) => ({
+                            id: apiItem.id.toString(),
+                            name: apiItem.productName || apiItem.product?.productName || "Product",
+                            category: apiItem.category || apiItem.product?.category || "Category",
+                            price: apiItem.price || apiItem.productVariant?.price || 0,
+                            image: apiItem.imgLink || apiItem.productVariant?.variantImgLink || apiItem.product?.defaultImgLink || "",
+                            quantity: apiItem.quantity,
+                        }));
+                        set({ cart: mappedItems, isLoading: false });
+                    } else {
+                        set({ error: response.message, isLoading: false });
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to fetch cart', isLoading: false });
+                }
+            },
+            addToCartAPI: async (userId: string, variantId: number, quantity: number) => {
+                set({ isLoading: true, error: null });
+                try {
+                    await shopService.addToCart({ userId, variantId, quantity });
+                    // After adding to cart, we should refresh the cart data
+                    await get().fetchCart();
+                    set({ isCartOpen: true, isLoading: false });
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to add item to cart', isLoading: false });
+                }
+            },
             addToCart: (product) => {
                 const cart = get().cart;
                 const existingItem = cart.find((item) => item.id === product.id);

@@ -1,0 +1,97 @@
+export interface ProductVariant {
+    id: number;
+    price: number;
+    sku: string;
+    stock: number;
+    variantImgLink: string;
+    variantName: string;
+}
+
+export interface ProductAPI {
+    category: string;
+    defaultImgLink: string;
+    id: number;
+    productDesc: string;
+    productName: string;
+    productVariants: ProductVariant[];
+    status: number;
+}
+
+export interface Product {
+    id: string;
+    name: string;
+    category: string;
+    price: number;
+    image: string;
+    images?: string[];
+    description?: string;
+    fullDescription?: string;
+    isHot?: boolean;
+    isNew?: boolean;
+    gripSizes?: string[];
+    sizes?: string[];
+    specifications?: Record<string, string>;
+    variants?: ProductVariant[];
+}
+
+export interface CartItem extends Product {
+    quantity: number;
+}
+
+export interface ProductSearchResponse {
+    data: {
+        content: ProductAPI[];
+        empty: boolean;
+        first: boolean;
+        last: boolean;
+        number: number;
+        numberOfElements: number;
+        pageable: any;
+        size: number;
+        sort: any;
+        totalElements: number;
+        totalPages: number;
+    };
+    success: boolean;
+    message: string;
+    status: number;
+    timestamp: string;
+}
+
+export interface ProductResponse {
+    data: ProductAPI;
+    success: boolean;
+    message: string;
+    status: number;
+    timestamp: string;
+}
+
+export interface CartAPIResponse {
+    data: {
+        cartId: number;
+        createdAt: string;
+        items: any[];
+        status: number;
+        totalPrice: number;
+        userId: string;
+    };
+    success: boolean;
+    message: string;
+    status: number;
+    timestamp: string;
+}
+
+export interface AddToCartRequest {
+    userId: string;
+    variantId: number;
+    quantity: number;
+}
+
+export interface AddToCartResponse {
+    cartId: number;
+    userId: string;
+    items: any[];
+    totalPrice: number;
+    status: number;
+    createdAt: string;
+}
