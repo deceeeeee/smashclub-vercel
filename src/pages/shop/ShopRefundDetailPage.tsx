@@ -237,10 +237,12 @@ export default function ShopRefundDetailPage() {
                             </div>
 
                             <div className="bg-[#051111] border border-white/5 rounded-xl p-4 flex items-center gap-3">
-                                <div className="bg-white/10 px-2 py-1 rounded text-[10px] font-bold text-white uppercase italic tracking-tighter">GoPay</div>
+                                <div className="bg-primary/20 p-2 rounded-lg text-primary">
+                                    <Wallet className="w-4 h-4" />
+                                </div>
                                 <div>
-                                    <div className="text-xs font-bold text-white">E-Wallet</div>
-                                    <div className="text-[10px] text-gray-500">0812****5678 a/n John Doe</div>
+                                    <div className="text-xs font-bold text-white">Smash Pay</div>
+                                    <div className="text-[10px] text-gray-500">Saldo akan bertambah otomatis</div>
                                 </div>
                             </div>
                         </div>

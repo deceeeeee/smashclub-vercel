@@ -28,6 +28,7 @@ import ChangeEmailPage from "../pages/auth/ChangeEmailPage"
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage"
 import ResendActivationPage from "../pages/auth/ResendActivationPage"
 import NotFoundPage from "../pages/NotFoundPage"
+import TransactionListPage from "../pages/transaction/TransactionListPage"
 
 const router = createBrowserRouter([
     {
@@ -49,6 +50,7 @@ const router = createBrowserRouter([
             { path: "booking/:id/refund", element: <BookingRefundPage /> },
             { path: "booking/:id/refund-details", element: <BookingRefundDetailPage /> },
             { path: "booking-history", element: <BookingHistoryPage /> },
+            { path: "transactions", element: <TransactionListPage /> },
             { path: "orders/:id", element: <BookingDetailPage /> },
             // Shop
             { path: "shop", element: <StorePage /> },

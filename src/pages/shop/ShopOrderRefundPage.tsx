@@ -138,6 +138,17 @@ export default function ShopOrderRefundPage() {
                         </div>
                     </div>
 
+                    {/* Refund Destination Info */}
+                    <div className="bg-[#112426] border border-primary/20 rounded-3xl p-6 flex items-center gap-4 group">
+                        <div className="p-3 bg-primary/10 rounded-2xl text-primary group-hover:scale-110 transition-transform">
+                            <Wallet className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-white mb-0.5">Metode Pengembalian Dana</h3>
+                            <p className="text-[11px] text-gray-400 font-medium">Dana akan dikembalikan ke <span className="text-primary font-bold">Smash Pay</span> Anda setelah pengajuan disetujui.</p>
+                        </div>
+                    </div>
+
                     {/* Submit Button */}
                     <div className="pt-6">
                         <button
@@ -159,46 +170,48 @@ export default function ShopOrderRefundPage() {
                         ESTABLISHED IN JAKARTA, INDONESIA.
                     </p>
                 </div>
-            </div>
+            </div >
 
             {/* Success Modal */}
-            {showSuccessModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#051111]/95 backdrop-blur-md animate-in fade-in duration-500">
-                    <div className="container mx-auto px-4 max-w-xl text-center">
-                        {/* Success Icon */}
-                        <div className="relative w-40 h-40 mx-auto mb-10">
-                            <div className="absolute inset-0 bg-primary/20 rounded-full blur-[60px] animate-pulse"></div>
-                            <div className="relative w-full h-full bg-primary rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(0,214,181,0.4)]">
-                                <Check className="w-20 h-20 text-[#051111] stroke-[4px]" />
+            {
+                showSuccessModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#051111]/95 backdrop-blur-md animate-in fade-in duration-500">
+                        <div className="container mx-auto px-4 max-w-xl text-center">
+                            {/* Success Icon */}
+                            <div className="relative w-40 h-40 mx-auto mb-10">
+                                <div className="absolute inset-0 bg-primary/20 rounded-full blur-[60px] animate-pulse"></div>
+                                <div className="relative w-full h-full bg-primary rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(0,214,181,0.4)]">
+                                    <Check className="w-20 h-20 text-[#051111] stroke-[4px]" />
+                                </div>
+                            </div>
+
+                            {/* Text Content */}
+                            <h2 className="text-5xl font-black italic uppercase tracking-tighter mb-6">
+                                Pengajuan <span className="text-primary">Diterima</span>
+                            </h2>
+                            <p className="text-gray-400 font-bold text-lg leading-relaxed max-w-md mx-auto mb-12">
+                                Permintaan refund Anda telah kami terima dan sedang dalam proses peninjauan. Dana akan dikreditkan ke <span className="text-primary">Smash Pay</span> Anda dalam 1-3 hari kerja.
+                            </p>
+
+                            {/* Buttons */}
+                            <div className="space-y-4 max-w-xs mx-auto">
+                                <button
+                                    onClick={() => navigate(`/shop/order/${currentOrder.id}/refund-details`, { state: { reason: selectedReason, additionalInfo } })}
+                                    className="w-full bg-white/5 border border-white/10 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all shadow-[0_4px_30px_rgba(0,214,181,0.2)]"
+                                >
+                                    <ClipboardList className="w-5 h-5 flex-shrink-0" /> Lihat Detail Refund
+                                </button>
+                                <Link
+                                    to="/"
+                                    className="w-full bg-white/5 border border-white/10 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all"
+                                >
+                                    <Home className="w-5 h-5 flex-shrink-0" /> Kembali ke Beranda
+                                </Link>
                             </div>
                         </div>
-
-                        {/* Text Content */}
-                        <h2 className="text-5xl font-black italic uppercase tracking-tighter mb-6">
-                            Pengajuan <span className="text-primary">Diterima</span>
-                        </h2>
-                        <p className="text-gray-400 font-bold text-lg leading-relaxed max-w-md mx-auto mb-12">
-                            Permintaan refund Anda telah kami terima dan sedang dalam proses peninjauan. Tim kami akan menghubungi Anda melalui email dalam 1-3 hari kerja.
-                        </p>
-
-                        {/* Buttons */}
-                        <div className="space-y-4 max-w-xs mx-auto">
-                            <button
-                                onClick={() => navigate(`/shop/order/${currentOrder.id}/refund-details`, { state: { reason: selectedReason, additionalInfo } })}
-                                className="w-full bg-white/5 border border-white/10 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all shadow-[0_4px_30px_rgba(0,214,181,0.2)]"
-                            >
-                                <ClipboardList className="w-5 h-5 flex-shrink-0" /> Lihat Detail Refund
-                            </button>
-                            <Link
-                                to="/"
-                                className="w-full bg-white/5 border border-white/10 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all"
-                            >
-                                <Home className="w-5 h-5 flex-shrink-0" /> Kembali ke Beranda
-                            </Link>
-                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }
