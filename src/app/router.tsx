@@ -21,6 +21,7 @@ import BookingRefundPage from "../features/booking/BookingRefundPage"
 import BookingRefundDetailPage from "../features/booking/BookingRefundDetailPage"
 import ShopOrderRefundPage from "../features/shop/ShopOrderRefundPage"
 import ShopRefundDetailPage from "../features/shop/ShopRefundDetailPage"
+import TransactionListPage from "../features/booking/TransactionListPage"
 import EditProfilePage from "../features/auth/EditPicturePage"
 import SettingsPage from "../features/auth/SettingsPage"
 import ChangePasswordPage from "../features/auth/ChangePasswordPage"
@@ -49,6 +50,7 @@ const router = createBrowserRouter([
             { path: "booking/:id/refund", element: <BookingRefundPage /> },
             { path: "booking/:id/refund-details", element: <BookingRefundDetailPage /> },
             { path: "booking-history", element: <BookingHistoryPage /> },
+            { path: "transactions", element: <TransactionListPage /> },
             { path: "orders/:id", element: <BookingDetailPage /> },
             // Shop
             { path: "shop", element: <StorePage /> },

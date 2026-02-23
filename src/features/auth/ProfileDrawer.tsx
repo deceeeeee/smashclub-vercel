@@ -44,6 +44,15 @@ export default function ProfileDrawer() {
             active: location.pathname === '/booking-history',
         },
         {
+            icon: <Wallet className="w-5 h-5" />,
+            label: 'Riwayat Transaksi',
+            onClick: () => {
+                toggleProfile(false);
+                navigate('/transactions');
+            },
+            active: location.pathname === '/transactions',
+        },
+        {
             icon: <ShoppingCart className="w-5 h-5" />,
             label: 'Pesanan Saya (E-Commerce)',
             onClick: () => {

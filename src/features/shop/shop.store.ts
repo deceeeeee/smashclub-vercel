@@ -54,31 +54,31 @@ export const MOCK_PRODUCTS: Product[] = [
             'String Pattern': '16 x 19'
         }
     },
-    {
-        id: '2',
-        name: 'Babolat Pure Aero',
-        category: 'Raket',
-        price: 3200000,
-        image: 'https://images.unsplash.com/photo-1617083281297-af33e89640bb?q=80&w=2070&auto=format&fit=crop',
-        gripSizes: ['L1', 'L2', 'L3'],
-        specifications: {
-            'Weight (Unstrung)': '300 g / 10.6 oz',
-            'Balance': '32 cm / 7 pts HL',
-            'String Pattern': '16 x 19'
-        }
-    },
-    {
-        id: '3',
-        name: 'Slazenger 4pc',
-        category: 'Bola',
-        price: 150000,
-        image: 'https://unsplash.com/photos/a-tennis-ball-on-a-table-hH_wY-p0X0k',
-        specifications: {
-            'Weight': '30 g',
-            'Diameter': '5.2 cm',
-            'Number of Balls': '4'
-        }
-    },
+    // {
+    //     id: '2',
+    //     name: 'Babolat Pure Aero',
+    //     category: 'Raket',
+    //     price: 3200000,
+    //     image: 'https://images.unsplash.com/photo-1617083281297-af33e89640bb?q=80&w=2070&auto=format&fit=crop',
+    //     gripSizes: ['L1', 'L2', 'L3'],
+    //     specifications: {
+    //         'Weight (Unstrung)': '300 g / 10.6 oz',
+    //         'Balance': '32 cm / 7 pts HL',
+    //         'String Pattern': '16 x 19'
+    //     }
+    // },
+    // {
+    //     id: '3',
+    //     name: 'Slazenger 4pc',
+    //     category: 'Bola',
+    //     price: 150000,
+    //     image: 'https://unsplash.com/photos/a-tennis-ball-on-a-table-hH_wY-p0X0k',
+    //     specifications: {
+    //         'Weight': '30 g',
+    //         'Diameter': '5.2 cm',
+    //         'Number of Balls': '4'
+    //     }
+    // },
     {
         id: '4',
         name: 'Nike Court Air',
@@ -144,18 +144,18 @@ export const MOCK_PRODUCTS: Product[] = [
         sizes: ['40', '41', '42', '43'],
         description: 'Ukuran: 42 EU - Red/White'
     },
-    {
-        id: '8',
-        name: 'Wilson Roland Garros',
-        category: 'Bola',
-        price: 180000,
-        image: 'https://drive.google.com/file/d/1Pv5m8PSQHcF-RkgYCdqGWRxRlu_BST0R/view?usp=sharing',
-        specifications: {
-            'Weight': '30 g',
-            'Diameter': '5.5 cm',
-            'Number of Balls': '4'
-        }
-    },
+    // {
+    //     id: '8',
+    //     name: 'Wilson Roland Garros',
+    //     category: 'Bola',
+    //     price: 180000,
+    //     image: 'https://drive.google.com/file/d/1Pv5m8PSQHcF-RkgYCdqGWRxRlu_BST0R/view?usp=sharing',
+    //     specifications: {
+    //         'Weight': '30 g',
+    //         'Diameter': '5.5 cm',
+    //         'Number of Balls': '4'
+    //     }
+    // },
 ];
 
 export const useShopStore = create<ShopState>()(

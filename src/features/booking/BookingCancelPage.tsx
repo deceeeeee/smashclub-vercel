@@ -1,32 +1,42 @@
 import { useState } from "react"
 import { Link, useParams, useNavigate } from "react-router-dom"
-import { ChevronRight, HelpCircle, Check, Home, ClipboardList, ArrowRight } from "lucide-react"
-import { useBookingStore } from "./booking.store"
+import { ChevronRight, HelpCircle, Check, Home, ClipboardList, ArrowRight, Loader2 } from "lucide-react"
 import { cn } from "../../lib/utils"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { bookingService } from "./booking.service"
+import dayjs from 'dayjs'
+import 'dayjs/locale/id'
+
+dayjs.locale('id')
 
 export default function BookingCancelPage() {
-    const { id } = useParams()
+    const { id: bookingCode } = useParams()
     const navigate = useNavigate()
-    const { bookingHistory, cancelBooking } = useBookingStore()
+    const queryClient = useQueryClient()
     const [selectedReason, setSelectedReason] = useState<string>("")
     const [otherReason, setOtherReason] = useState<string>("")
     const [showSuccessModal, setShowSuccessModal] = useState(false)
 
-    // Find the booking in history or use mock from image
-    const booking = bookingHistory.find(b => b.id === id)
+    // Fetch actual booking detail
+    const { data: bookingResponse, isLoading } = useQuery({
+        queryKey: ['booking-detail', bookingCode],
+        queryFn: () => bookingService.getBookingDetails(bookingCode!),
+        enabled: !!bookingCode
+    });
 
-    const mockBooking = {
-        id: id || "88291",
-        courtName: "Emerald Tennis Center",
-        courtType: "Lapangan Indoor 02",
-        date: "Sabtu, 24 Feb 2024",
-        timeRange: "18:00 - 20:00 (2 Jam)",
-        totalPrice: 300000,
-        status: 'MENUNGGU BAYAR' as const,
-        image: "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop",
-    }
+    const booking = bookingResponse?.data;
 
-    const currentBooking = booking ? booking : mockBooking
+    const cancelMutation = useMutation({
+        mutationFn: (reason: string) => bookingService.updateBookingStatus(bookingCode!, 0, reason),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['booking-detail', bookingCode] });
+            queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+            setShowSuccessModal(true);
+        },
+        onError: (error: any) => {
+            alert(error?.response?.data?.message || "Gagal membatalkan pesanan. Silakan coba lagi.");
+        }
+    });
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('id-ID', {
@@ -48,16 +58,32 @@ export default function BookingCancelPage() {
             return
         }
 
+        const reason = selectedReason === "Lainnya" ? otherReason : selectedReason;
         if (selectedReason === "Lainnya" && !otherReason.trim()) {
             alert("Mohon tuliskan alasan Anda.")
             return
         }
 
-        if (id) {
-            cancelBooking(id)
-        }
+        cancelMutation.mutate(reason);
+    }
 
-        setShowSuccessModal(true)
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#051111]">
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            </div>
+        );
+    }
+
+    if (!booking) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#051111] text-white">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold mb-4">Pesanan Tidak Ditemukan</h2>
+                    <Link to="/booking-history" className="text-primary hover:underline">Kembali ke Riwayat</Link>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -87,17 +113,17 @@ export default function BookingCancelPage() {
 
                         <div className="flex gap-6 group">
                             <div className="w-24 h-24 rounded-2xl bg-gray-900 border border-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center p-3">
-                                <img src={currentBooking.image} alt={currentBooking.courtName} className="w-full h-full object-cover rounded-lg" />
+                                <img src={booking.courtImgLink || "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop"} alt={booking.courtName} className="w-full h-full object-cover rounded-lg" />
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
-                                <p className="text-[10px] font-bold text-primary mb-1 uppercase tracking-wider">ID Pesanan: #SC-{currentBooking.id}</p>
+                                <p className="text-[10px] font-bold text-primary mb-1 uppercase tracking-wider">ID Pesanan: #{booking.bookingCode}</p>
                                 <div className="flex justify-between items-start">
-                                    <h3 className="text-xl font-bold">{currentBooking.courtName} - {currentBooking.courtType}</h3>
-                                    <span className="text-xl font-bold text-primary">{formatPrice(currentBooking.totalPrice)}</span>
+                                    <h3 className="text-xl font-bold">{booking.courtName}</h3>
+                                    <span className="text-xl font-bold text-primary">{formatPrice(booking.totalPrice)}</span>
                                 </div>
                                 <div className="text-sm text-gray-500 font-medium">
-                                    <p>{currentBooking.date}</p>
-                                    <p>{currentBooking.timeRange}</p>
+                                    <p>{dayjs(booking.bookingDate).format('D MMMM YYYY')}</p>
+                                    <p>{booking.startTime.substring(0, 5)} - {booking.endTime.substring(0, 5)}</p>
                                 </div>
                             </div>
                         </div>
@@ -206,7 +232,7 @@ export default function BookingCancelPage() {
                         </p>
 
                         <p className="text-primary font-black uppercase tracking-widest text-sm mb-12">
-                            ID Pesanan: #SC-{currentBooking.id}
+                            ID Pesanan: #{booking.bookingCode}
                         </p>
 
                         {/* Buttons */}
