@@ -1,5 +1,5 @@
 import { useLocation, useParams, Link } from "react-router-dom"
-import { Check, Clock, Copy, MessageSquare, FileText, Package, XCircle } from "lucide-react"
+import { Check, Clock, Copy, MessageSquare, FileText, Package, XCircle, Wallet } from "lucide-react"
 import { useShopStore } from "../../features/shop/shop.store"
 import { cn } from "../../lib/utils"
 import { useEffect } from "react"
@@ -141,11 +141,15 @@ export default function ShopRefundDetailPage() {
                                                 isActive ? `bg-[#0a1a1a] border-primary text-primary shadow-[0_0_15px_rgba(34,197,94,0.2)]` :
                                                     "bg-[#0a1a1a] border-white/10 text-gray-600"
                                         )}>
-                                            {isCompleted ? <Check className="w-5 h-5 text-[#051111]" /> : <Icon className={cn("w-5 h-5", isActive ? "text-primary animate-pulse" : "text-gray-600")} />}
+                                            {isCompleted ? (
+                                                refundStatusNum === 2 && step.id === 3 ? <XCircle className="w-5 h-5 text-white" /> : <Check className="w-5 h-5 text-[#051111]" />
+                                            ) : (
+                                                <Icon className={cn("w-5 h-5", isActive ? "text-primary animate-pulse" : "text-gray-600")} />
+                                            )}
                                         </div>
                                         <h3 className={cn(
                                             "font-bold text-sm mb-1 transition-colors",
-                                            isActive || isCompleted ? "text-white" : "text-gray-500"
+                                            isActive || isCompleted ? (refundStatusNum === 2 && step.id === 3 ? "text-red-500" : "text-white") : "text-gray-500"
                                         )}>
                                             {step.label}
                                         </h3>
@@ -263,6 +267,17 @@ export default function ShopRefundDetailPage() {
                                 <div className="flex items-end gap-1">
                                     <span className="text-primary text-sm font-bold mb-1">Rp</span>
                                     <span className="text-3xl font-black text-primary">{formatPrice(currentOrder.total).replace('Rp ', '')}</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-gray-600 uppercase">DIKEMBALIKAN KE:</span>
+                            </div>
+
+                            <div className="bg-[#051111] border border-white/5 rounded-xl p-4 flex items-center gap-3">
+                                <div className="bg-primary/20 p-2 rounded-lg text-primary">
+                                    <Wallet className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-white">Smash Pay</div>
+                                    <div className="text-[10px] text-gray-500">Saldo akan bertambah otomatis</div>
                                 </div>
                             </div>
                         </div>

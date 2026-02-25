@@ -1,5 +1,5 @@
 import { api } from "../../lib/axios"
-import type { ProfileResponse, UpdateProfileRequest, UpdateProfileResponse, ChangePasswordRequest, ChangePasswordResponse, LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, VerifyOTPResponse, LogoutResponse } from "./auth.types"
+import type { ProfileResponse, UpdateProfileRequest, UpdateProfileResponse, ChangePasswordRequest, ChangePasswordResponse, LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, VerifyOTPResponse, LogoutResponse, WalletBalanceResponse } from "./auth.types"
 
 export const authService = {
     getProfile: async (): Promise<ProfileResponse> => {
@@ -198,6 +198,16 @@ export const authService = {
     resendOTP: async (userId: string): Promise<any> => {
         try {
             const response = await api.post("/auth/resend-otp", { userId })
+            return response.data
+        } catch (error: any) {
+            if (error.response?.data) return error.response.data
+            throw error
+        }
+    },
+
+    getWalletBalance: async (): Promise<WalletBalanceResponse> => {
+        try {
+            const response = await api.get<WalletBalanceResponse>("/wallet/balance")
             return response.data
         } catch (error: any) {
             if (error.response?.data) return error.response.data

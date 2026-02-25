@@ -91,9 +91,16 @@ export default function VerifyAccount() {
 
     // Auto-verify if UUID token is in URL (for email change)
     useEffect(() => {
-        if (urlToken && type === "email_change") {
-            setIsVerifyingLink(true)
-            verifyEmailChangeMutation.mutate(urlToken)
+        if (urlToken) {
+            setIsVerifyingLink(type === "email_change" || type === "verify_email")
+
+            if (type === "email_change") {
+                verifyEmailChangeMutation.mutate(urlToken)
+            }
+
+            if (type === "verify_email") {
+                verifyMutation.mutate(urlToken)
+            }
         }
     }, [urlToken, type])
 

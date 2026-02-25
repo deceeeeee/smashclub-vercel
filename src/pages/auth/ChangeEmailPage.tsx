@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Mail, Lock, Eye, EyeOff, Info, CheckCircle2, Loader2, AlertCircle, Check, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Mail, Info, CheckCircle2, Loader2, AlertCircle, Check, ShieldCheck } from 'lucide-react';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { authService } from '../../features/auth/auth.service';
 
 export default function ChangeEmailPage() {
     const navigate = useNavigate();
-    const { user, refreshToken, logout } = useAuthStore();
+    const { user } = useAuthStore();
     const [isSuccess, setIsSuccess] = useState(false);
-    const [countdown, setCountdown] = useState(10);
+    // const [countdown, setCountdown] = useState(10);
 
     const queryClient = useQueryClient();
     const [newEmail, setNewEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
+    // const [password, setPassword] = useState('');
+    // const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const mutation = useMutation({

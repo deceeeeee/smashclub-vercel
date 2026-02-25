@@ -1,16 +1,49 @@
+import { useQuery } from "@tanstack/react-query"
+import { bookingService } from "../../features/booking/booking.service"
+import type { BookingDetail } from "../../features/booking/booking.types"
+import dayjs from 'dayjs'
 import { Link } from "react-router-dom"
-import { Calendar, ChevronRight, RefreshCw, Search, ChevronLeft } from "lucide-react"
-import { useBookingStore } from "../../features/booking/booking.store"
+import { Calendar, ChevronRight, RefreshCw, Search, ChevronLeft, Loader2 } from "lucide-react"
 import { cn } from "../../lib/utils"
+import { useState } from "react"
 
 export default function BookingHistoryPage() {
-    const { bookingHistory } = useBookingStore()
+    const [page, setPage] = useState(0);
+    const size = 10;
 
-    const statusStyles = {
+    const { data: bookingsResponse, isLoading } = useQuery({
+        queryKey: ['my-bookings', page, size],
+        queryFn: () => bookingService.getMyBookings(page, size)
+    });
+
+    const paginatedData = bookingsResponse?.data;
+    const bookings = paginatedData?.content || [];
+    const totalPages = paginatedData?.totalPages || 0;
+    const totalElements = paginatedData?.totalElements || 0;
+
+    const statusStyles: Record<string, string> = {
+        'COMPLETED': 'bg-green-500/10 border-green-500/30 text-green-400',
         'SELESAI': 'bg-green-500/10 border-green-500/30 text-green-400',
+        'PENDING': 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
         'MENUNGGU BAYAR': 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
-        'DIBATALKAN': 'bg-gray-500/10 border-gray-500/30 text-gray-400'
+        'CONFIRMED': 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+        'DIKONFIRMASI': 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+        'ONGOING': 'bg-primary/10 border-primary/30 text-primary',
+        'SEDANG BERJALAN': 'bg-primary/10 border-primary/30 text-primary',
+        'CANCELLED': 'bg-red-500/10 border-red-500/30 text-red-400',
+        'DIBATALKAN': 'bg-red-500/10 border-red-500/30 text-red-400'
     }
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            </div>
+        );
+    }
+
+    const startIdx = page * size + 1;
+    const endIdx = Math.min((page + 1) * size, totalElements);
 
     return (
         <div className="container mx-auto px-4 py-12 max-w-7xl">
@@ -42,24 +75,24 @@ export default function BookingHistoryPage() {
 
                 {/* Table Body */}
                 <div className="divide-y divide-white/5">
-                    {bookingHistory.length > 0 ? (
-                        bookingHistory.map((booking) => (
+                    {bookings.length > 0 ? (
+                        bookings.map((booking: BookingDetail) => (
                             <div key={booking.id} className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center px-8 py-8 hover:bg-white/[0.01] transition-all group">
                                 {/* Detail Lapangan */}
                                 <div className="col-span-1 md:col-span-4 flex items-center gap-5">
                                     <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-900 border border-white/5 flex-shrink-0 group-hover:border-primary/30 transition-colors">
-                                        <img src={booking.image} alt={booking.courtName} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                        <img src={booking.court.courtImgLink || "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop"} alt={booking.court.courtName} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold text-white mb-1 group-hover:text-primary transition-colors">{booking.courtName}</h3>
-                                        <p className="text-sm text-gray-500">{booking.courtType}</p>
+                                        <h3 className="text-lg font-bold text-white mb-1 group-hover:text-primary transition-colors">{booking.court.courtName}</h3>
+                                        <p className="text-sm text-gray-500">{booking.court.courtCode}</p>
                                     </div>
                                 </div>
 
                                 {/* Tanggal & Waktu */}
                                 <div className="col-span-1 md:col-span-2">
-                                    <div className="text-sm font-bold text-gray-200 mb-1">{booking.date}</div>
-                                    <div className="text-xs text-gray-500 font-medium">{booking.timeRange}</div>
+                                    <div className="text-sm font-bold text-gray-200 mb-1">{dayjs(booking.bookingDate).format('D MMM YYYY')}</div>
+                                    <div className="text-xs text-gray-500 font-medium">{booking.startTime.substring(0, 5)} - {booking.endTime.substring(0, 5)}</div>
                                 </div>
 
                                 {/* Total Harga */}
@@ -72,30 +105,25 @@ export default function BookingHistoryPage() {
                                 <div className="col-span-1 md:col-span-2">
                                     <div className={cn(
                                         "inline-flex px-3 py-1 rounded-full text-[9px] font-black border tracking-widest",
-                                        statusStyles[booking.status]
+                                        statusStyles[booking.statusDescription] || 'bg-gray-500/10 border-gray-500/30 text-gray-400'
                                     )}>
-                                        {booking.status}
+                                        {booking.statusDescription}
                                     </div>
                                 </div>
 
                                 {/* Aksi */}
                                 <div className="col-span-1 md:col-span-2 flex flex-col md:items-end gap-3 px-0 md:px-4">
-                                    {booking.status === 'SELESAI' && (
+                                    {(booking.statusDescription === 'COMPLETED' || booking.statusDescription === 'SELESAI') && (
                                         <Link to="/booking" className="bg-primary text-[#051111] px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-[0_4px_15px_rgba(34,197,94,0.2)]">
                                             <Calendar className="w-4 h-4" /> Booking Lagi
                                         </Link>
                                     )}
-                                    {booking.status === 'MENUNGGU BAYAR' && (
-                                        <Link to={`/booking/checkout/1`} className="bg-primary text-[#051111] px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-[0_4px_15px_rgba(34,197,94,0.2)]">
-                                            Bayar Sekarang
+                                    {(booking.statusDescription === 'CANCELLED' || booking.statusDescription === 'DIBATALKAN') && (
+                                        <Link to="/booking" className="text-gray-400 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors">
+                                            Re-book <RefreshCw className="w-3 h-3" />
                                         </Link>
                                     )}
-                                    {booking.status === 'DIBATALKAN' && (
-                                        <button className="text-gray-400 hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors">
-                                            Re-book <RefreshCw className="w-3 h-3" />
-                                        </button>
-                                    )}
-                                    <Link to={`/orders/${booking.id}`} className="flex items-center justify-center gap-1.5 text-xs font-bold text-gray-500 hover:text-primary transition-all">
+                                    <Link to={`/orders/${booking.bookingCode}`} className="flex items-center justify-center gap-1.5 text-xs font-bold text-gray-500 hover:text-primary transition-all">
                                         Lihat Detail <ChevronRight className="w-4 h-4" />
                                     </Link>
                                 </div>
@@ -117,29 +145,53 @@ export default function BookingHistoryPage() {
                     )}
                 </div>
 
-                {/* Pagination Placeholder */}
-                {bookingHistory.length > 0 && (
+                {/* Pagination */}
+                {bookings.length > 0 && totalPages > 1 && (
                     <div className="px-8 py-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 bg-white/[0.01]">
                         <p className="text-xs text-gray-500 font-bold tracking-tight">
-                            Menampilkan <span className="text-gray-300">1 - {bookingHistory.length}</span> dari <span className="text-gray-300">{bookingHistory.length}</span> pesanan
+                            Menampilkan <span className="text-gray-300">{startIdx} - {endIdx}</span> dari <span className="text-gray-300">{totalElements}</span> pesanan
                         </p>
                         <div className="flex items-center gap-3">
-                            <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-600 border border-white/5 cursor-not-allowed">
+                            <button
+                                onClick={() => setPage(p => Math.max(0, p - 1))}
+                                disabled={page === 0}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-400 border border-white/5 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-all"
+                            >
                                 <ChevronLeft className="w-5 h-5" />
                             </button>
-                            <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-[#051111] font-black text-xs border border-primary shadow-[0_0_15px_rgba(34,197,94,0.2)]">
-                                1
-                            </button>
-                            <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-400 hover:text-white border border-white/5 transition-all text-xs font-bold">
-                                2
-                            </button>
-                            <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-400 hover:text-white border border-white/5 transition-all text-xs font-bold">
-                                3
-                            </button>
-                            <button className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-400 hover:text-white border border-white/5 transition-all">
+
+                            {[...Array(totalPages)].map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setPage(i)}
+                                    className={cn(
+                                        "w-10 h-10 flex items-center justify-center rounded-xl text-xs font-black border transition-all",
+                                        page === i
+                                            ? "bg-primary text-[#051111] border-primary shadow-[0_0_15px_rgba(34,197,94,0.2)]"
+                                            : "bg-white/5 text-gray-400 border-white/5 hover:text-white hover:bg-white/10"
+                                    )}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                                disabled={page === totalPages - 1}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-400 border border-white/5 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-all"
+                            >
                                 <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {/* Info showing even if only 1 page */}
+                {bookings.length > 0 && totalPages <= 1 && (
+                    <div className="px-8 py-6 border-t border-white/5 flex justify-center bg-white/[0.01]">
+                        <p className="text-xs text-gray-500 font-bold tracking-tight">
+                            Menampilkan semua <span className="text-gray-300">{totalElements}</span> pesanan
+                        </p>
                     </div>
                 )}
             </div>

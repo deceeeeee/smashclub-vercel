@@ -4,9 +4,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useMutation } from '@tanstack/react-query';
 import { authService } from '../../features/auth/auth.service';
+import { useWalletStore } from '../../features/wallet/wallet.store';
 
 export default function ProfileDrawer() {
-    const { user, isProfileOpen, toggleProfile, logout, walletBalance, refreshToken } = useAuthStore();
+    const { user, isProfileOpen, toggleProfile, logout, refreshToken } = useAuthStore();
+    const { balance } = useWalletStore();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -42,6 +44,15 @@ export default function ProfileDrawer() {
                 navigate('/booking-history');
             },
             active: location.pathname === '/booking-history',
+        },
+        {
+            icon: <Wallet className="w-5 h-5" />,
+            label: 'Riwayat Transaksi',
+            onClick: () => {
+                toggleProfile(false);
+                navigate('/transactions');
+            },
+            active: location.pathname === '/transactions',
         },
         {
             icon: <ShoppingCart className="w-5 h-5" />,
@@ -141,11 +152,31 @@ export default function ProfileDrawer() {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-black text-white tracking-tight">
-                                        {formatCurrency(walletBalance || 0)}
+                                        {formatCurrency(balance || 0)}
                                     </span>
                                     <span className="text-[10px] text-gray-500 font-medium mt-1 uppercase tracking-widest">
                                         Saldo dari Pengembalian Dana
                                     </span>
+                                </div>
+                                <div className="flex items-center justify-between mt-6 pt-4 border-t border-primary/10">
+                                    <button
+                                        onClick={() => {
+                                            toggleProfile(false);
+                                            navigate('/top-up');
+                                        }}
+                                        className="text-[10px] font-black uppercase tracking-widest bg-primary text-[#051111] px-4 py-2 rounded-lg hover:bg-primary/90 transition-all active:scale-95"
+                                    >
+                                        Isi Saldo
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            toggleProfile(false);
+                                            navigate('/top-up/history');
+                                        }}
+                                        className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-white transition-colors"
+                                    >
+                                        Lihat Riwayat
+                                    </button>
                                 </div>
                             </div>
                         </div>

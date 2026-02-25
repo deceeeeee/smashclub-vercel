@@ -8,7 +8,7 @@ import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage"
 import BookingPage from "../pages/booking/BookingPage"
 import BookingSchedulePage from "../pages/booking/BookingSchedulePage"
 import CheckoutPage from "../pages/booking/CheckoutPage"
-import BookingDetailPage from "../pages/booking/BookingDetailPage"
+
 import BookingCancelPage from "../pages/booking/BookingCancelPage"
 import StorePage from "../pages/shop/StorePage"
 import ProductDetailPage from "../pages/shop/ProductDetailPage"
@@ -18,7 +18,7 @@ import ShopOrderHistoryPage from "../pages/shop/ShopOrderHistoryPage"
 import ShopOrderCancelPage from "../pages/shop/ShopOrderCancelPage"
 import BookingHistoryPage from "../pages/booking/BookingHistoryPage"
 import BookingRefundPage from "../pages/booking/BookingRefundPage"
-import BookingRefundDetailPage from "../pages/booking/BookingRefundDetailPage"
+import BookingRefundDetailPage from "../pages/booking/BookingCancelRefundDetailPage"
 import ShopOrderRefundPage from "../pages/shop/ShopOrderRefundPage"
 import ShopRefundDetailPage from "../pages/shop/ShopRefundDetailPage"
 import EditProfilePage from "../pages/auth/EditPicturePage"
@@ -27,7 +27,12 @@ import ChangePasswordPage from "../pages/auth/ChangePasswordPage"
 import ChangeEmailPage from "../pages/auth/ChangeEmailPage"
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage"
 import ResendActivationPage from "../pages/auth/ResendActivationPage"
+import BookingHistoryDetailPage from "../pages/booking/BookingHistoryDetailPage"
 import NotFoundPage from "../pages/NotFoundPage"
+import TransactionListPage from "../pages/transaction/TransactionListPage"
+import TopUpPage from "../pages/transaction/TopUpPage"
+import TopUpHistoryPage from "../pages/transaction/TopUpHistoryPage"
+import TopUpHistoryDetailPage from "../pages/transaction/TopUpHistoryDetailPage"
 
 const router = createBrowserRouter([
     {
@@ -43,13 +48,14 @@ const router = createBrowserRouter([
             { path: "booking", element: <BookingPage /> },
             { path: "booking/schedule/:courtId", element: <BookingSchedulePage /> },
             { path: "booking/checkout/:courtId", element: <CheckoutPage /> },
-            { path: "booking/success", element: <BookingDetailPage /> }, // Mock success to detail
-            { path: "booking/:id", element: <BookingDetailPage /> },
+            { path: "booking/success", element: <BookingHistoryDetailPage /> }, // Mock success to detail
+            { path: "booking/:id", element: <BookingHistoryDetailPage /> },
             { path: "booking/:id/cancel", element: <BookingCancelPage /> },
             { path: "booking/:id/refund", element: <BookingRefundPage /> },
             { path: "booking/:id/refund-details", element: <BookingRefundDetailPage /> },
             { path: "booking-history", element: <BookingHistoryPage /> },
-            { path: "orders/:id", element: <BookingDetailPage /> },
+            { path: "transactions", element: <TransactionListPage /> },
+            { path: "orders/:id", element: <BookingHistoryDetailPage /> },
             // Shop
             { path: "shop", element: <StorePage /> },
             { path: "shop/:productId", element: <ProductDetailPage /> },
@@ -85,6 +91,18 @@ const router = createBrowserRouter([
     {
         path: "/reset-password",
         element: <ResetPasswordPage />
+    },
+    {
+        path: "/top-up",
+        element: <TopUpPage />
+    },
+    {
+        path: "/top-up/history",
+        element: <TopUpHistoryPage />
+    },
+    {
+        path: "/top-up/history/:id",
+        element: <TopUpHistoryDetailPage />
     },
 ])
 
