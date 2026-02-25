@@ -36,6 +36,8 @@ export interface Product {
 
 export interface CartItem extends Product {
     quantity: number;
+    variantName: string;
+    variantImgLink: string;
 }
 
 export interface ProductSearchResponse {
@@ -106,15 +108,66 @@ export interface MessageResponse {
 }
 
 export interface Order {
-    id: number;
+    orderId: number;
+    orderCode: string;
     user: string;
     total_price: number;
     status: number;
     created_at: string;
+    transactionId: string;
+    userId: string;
 }
 
 export interface OrderResponse {
     message: string;
-    order: Order;
+    data: Order;
+    success: boolean;
+    status: number;
+    timestamp: string;
 }
 
+export interface OrderItem {
+    price: number;
+    quantity: number;
+    totalPrice: number;
+    variantId: number;
+    variantName: string;
+}
+
+export interface OrderSummary {
+    items: OrderItem[];
+    orderCode: string;
+    orderDate: string;
+    orderId: number;
+    status: number;
+    subtotal: number;
+    totalPrice: number;
+}
+
+export interface OrderSummaryResponse {
+    data: OrderSummary;
+    success: boolean;
+    message: string;
+    status: number;
+    timestamp: string;
+}
+
+export interface OrderHistoryResponse {
+    data: {
+        content: Order[];
+        empty: boolean;
+        first: boolean;
+        last: boolean;
+        number: number;
+        numberOfElements: number;
+        pageable: any;
+        size: number;
+        sort: any;
+        totalElements: number;
+        totalPages: number;
+    };
+    success: boolean;
+    message: string;
+    status: number;
+    timestamp: string;
+}

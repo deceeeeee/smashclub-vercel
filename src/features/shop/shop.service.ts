@@ -4,8 +4,10 @@ import type {
     CartAPIResponse,
     MessageResponse,
     OrderResponse,
+    OrderSummaryResponse,
+    OrderHistoryResponse,
     ProductResponse,
-    ProductSearchResponse
+    ProductSearchResponse,
 } from "./shop.types";
 
 export const shopService = {
@@ -103,9 +105,9 @@ export const shopService = {
         }
     },
 
-    checkout: async (): Promise<OrderResponse> => {
+    checkout: async (data: any = {}): Promise<OrderResponse> => {
         try {
-            const response = await api.post<OrderResponse>("/orders/checkout");
+            const response = await api.post<OrderResponse>("/orders/checkout", data);
             return response.data;
         } catch (error: any) {
             if (error.response?.data) return error.response.data;
@@ -123,9 +125,9 @@ export const shopService = {
         }
     },
 
-    getOrderSummary: async (orderId: number): Promise<OrderResponse> => {
+    getOrderSummary: async (orderId: number): Promise<OrderSummaryResponse> => {
         try {
-            const response = await api.get<OrderResponse>(`/orders/${orderId}`);
+            const response = await api.get<OrderSummaryResponse>(`/orders/${orderId}`);
             return response.data;
         } catch (error: any) {
             if (error.response?.data) return error.response.data;
@@ -133,9 +135,9 @@ export const shopService = {
         }
     },
 
-    getOrderHistory: async (page = 0, pageSize = 25): Promise<OrderResponse> => {
+    getOrderHistory: async (page = 0, pageSize = 25): Promise<OrderHistoryResponse> => {
         try {
-            const response = await api.get<OrderResponse>("/orders/history", {
+            const response = await api.get<OrderHistoryResponse>("/orders/history", {
                 params: { page, page_size: pageSize }
             });
             return response.data;
@@ -157,9 +159,21 @@ export const shopService = {
         }
     },
 
-    cancelOrder: async (orderId: number): Promise<MessageResponse> => {
+    cancelOrder: async (orderCode: string): Promise<MessageResponse> => {
         try {
-            const response = await api.patch<MessageResponse>(`/orders/${orderId}/cancel`);
+            const response = await api.patch<MessageResponse>(`/orders/${orderCode}/cancel`);
+            return response.data;
+        } catch (error: any) {
+            if (error.response?.data) return error.response.data;
+            throw error;
+        }
+    },
+
+    requestRefund: async (orderCode: string, reason: string): Promise<MessageResponse> => {
+        try {
+            const response = await api.post<MessageResponse>(`/transaction/cancel-by-reference/${orderCode}`, {
+                refundReason: reason
+            });
             return response.data;
         } catch (error: any) {
             if (error.response?.data) return error.response.data;

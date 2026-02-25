@@ -2,9 +2,15 @@ import { Link } from "react-router-dom"
 import { ShoppingBag, ChevronRight, Package, ChevronLeft } from "lucide-react"
 import { useShopStore } from "../../features/shop/shop.store"
 import { cn } from "../../lib/utils"
+import { useEffect } from "react"
+import { Loader2 } from "lucide-react"
 
 export default function ShopOrderHistoryPage() {
-    const { orderHistory } = useShopStore()
+    const { orderHistory, getOrderHistoryAPI, isLoading } = useShopStore()
+
+    useEffect(() => {
+        getOrderHistoryAPI()
+    }, [getOrderHistoryAPI])
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('id-ID', {
@@ -54,24 +60,29 @@ export default function ShopOrderHistoryPage() {
 
                 {/* Table Body */}
                 <div className="divide-y divide-white/5">
-                    {orderHistory.length > 0 ? (
+                    {isLoading ? (
+                        <div className="py-24 text-center">
+                            <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-6" />
+                            <h3 className="text-xl font-bold text-white mb-2 uppercase italic tracking-tighter">Memuat <span className="text-primary">Riwayat Pesanan...</span></h3>
+                        </div>
+                    ) : orderHistory.length > 0 ? (
                         orderHistory.map((order) => (
                             <div key={order.id} className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center px-8 py-8 hover:bg-white/[0.01] transition-all group">
                                 {/* Produk */}
                                 <div className="col-span-1 md:col-span-4 flex items-center gap-5">
                                     <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-900 border border-white/5 flex-shrink-0 group-hover:border-primary/30 transition-colors flex items-center justify-center p-2">
-                                        {order.items[0]?.image ? (
-                                            <img src={order.items[0].image} alt={order.items[0].name} className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
+                                        {order.orderItemImgLink ? (
+                                            <img src={order.orderItemImgLink} alt={order.orderCode} className="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
                                         ) : (
                                             <Package className="w-8 h-8 text-gray-700" />
                                         )}
                                     </div>
                                     <div>
                                         <h3 className="text-lg font-bold text-white mb-1 group-hover:text-primary transition-colors">
-                                            {order.items[0]?.name || 'Pesanan'}
+                                            {order.items.length > 0 ? order.items[0].name : 'Pesanan'}
                                             {order.items.length > 1 && <span className="text-gray-500 text-sm ml-2">+{order.items.length - 1} produk lainnya</span>}
                                         </h3>
-                                        <p className="text-sm text-gray-500 tracking-wider">ID: #{order.id}</p>
+                                        <p className="text-sm text-gray-500 tracking-wider">Kode Pesanan: #{order.orderCode}</p>
                                     </div>
                                 </div>
 

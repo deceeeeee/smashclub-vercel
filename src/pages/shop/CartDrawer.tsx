@@ -2,7 +2,7 @@ import { ShoppingCart, X, Plus, Minus, ArrowRight, Loader2, Trash2 } from 'lucid
 import { useShopStore } from '../../features/shop/shop.store';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { useNavigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '../../lib/utils';
 
 export default function CartDrawer() {
@@ -23,14 +23,34 @@ export default function CartDrawer() {
     } = useShopStore();
     const { token } = useAuthStore();
     const navigate = useNavigate();
+    const [isProcessing, setIsProcessing] = useState(false);
 
     useEffect(() => {
         if (token) fetchCart();
     }, [token]);
 
-    const handleCheckout = () => {
-        toggleCart(false);
-        navigate('/shop/checkout');
+    const handleCheckout = async () => {
+        if (!token) {
+            navigate('/login');
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            toggleCart(false);
+            navigate('/shop/checkout', {
+                state: {
+                    isBuyNow: false,
+                    items: cart,
+                    subtotal: getSubtotal()
+                }
+            });
+        } catch (error: any) {
+            console.error("Checkout error:", error);
+            alert(error.message || "Terjadi kesalahan saat checkout");
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
@@ -222,13 +242,13 @@ export default function CartDrawer() {
                             </div>
                             <button
                                 onClick={handleCheckout}
-                                disabled={isLoading}
+                                disabled={isLoading || isProcessing}
                                 className={cn(
                                     "w-full flex items-center justify-center gap-3 rounded-2xl bg-primary px-6 py-5 text-background font-black hover:bg-primary/90 transition-all active:scale-[0.98] shadow-[0_0_30px_rgba(0,214,181,0.2)]",
-                                    isLoading && "opacity-50 cursor-not-allowed"
+                                    (isLoading || isProcessing) && "opacity-50 cursor-not-allowed"
                                 )}
                             >
-                                {isLoading ? (
+                                {isProcessing ? (
                                     <>
                                         <Loader2 className="w-5 h-5 animate-spin" />
                                         Memproses...

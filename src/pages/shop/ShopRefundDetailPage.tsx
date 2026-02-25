@@ -1,63 +1,89 @@
 import { useLocation, useParams, Link } from "react-router-dom"
-import { Check, Clock, Copy, MessageSquare, ShieldCheck, FileText, Package } from "lucide-react"
+import { Check, Clock, Copy, MessageSquare, FileText, Package, XCircle } from "lucide-react"
 import { useShopStore } from "../../features/shop/shop.store"
 import { cn } from "../../lib/utils"
+import { useEffect } from "react"
+import { Loader2 } from "lucide-react"
 
 export default function ShopRefundDetailPage() {
     const { id } = useParams()
     const location = useLocation()
-    const { orderHistory } = useShopStore()
+    const { orderHistory, getOrderSummaryAPI, isLoading } = useShopStore()
 
-    // Get data passed from previous page or mock it
+    useEffect(() => {
+        if (id) {
+            getOrderSummaryAPI(Number(id))
+        }
+    }, [id, getOrderSummaryAPI])
+
+    // Get data passed from previous page (fallback for reason)
     const locationState = location.state || {}
-    const { reason, additionalInfo, refundDate } = locationState
+    const { reason, additionalInfo } = locationState
 
-    // Find the order in history or use mock
+    // Find the order in history
     const order = orderHistory.find(o => o.id === id)
 
-    const mockOrder = {
-        id: id || "SC-2023081501",
-        date: "15 Agustus 2023",
-        status: "DIPROSES",
-        items: [
-            {
-                id: '1',
-                name: 'Yonex Astrox 88D Pro Gen-3',
-                variant: '4U/G5 - Cyan',
-                price: 2450000,
-                quantity: 1,
-                image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop'
-            },
-            {
-                id: '2',
-                name: 'Shuttlecock Tournament A1 (12 pcs)',
-                variant: 'Speed 78',
-                price: 125000,
-                quantity: 2,
-                image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=1925&auto=format&fit=crop'
-            }
-        ],
-        subtotal: 2700000,
-        shipping: 45000,
-        total: 2745000
+    if (isLoading && !order) {
+        return (
+            <div className="bg-[#051111] min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                <Loader2 className="w-12 h-12 text-primary animate-spin mb-6" />
+                <h1 className="text-xl font-bold text-white uppercase italic tracking-tighter">Memuat <span className="text-primary">Data Refund...</span></h1>
+            </div>
+        )
     }
 
-    const currentOrder = order ? order : mockOrder
+    if (!order) {
+        return (
+            <div className="bg-[#051111] min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+                    <Package className="w-10 h-10 text-red-500" />
+                </div>
+                <h1 className="text-3xl font-black text-white mb-2 italic uppercase tracking-tighter">REFUND TIDAK <span className="text-red-500">DITEMUKAN</span></h1>
+                <p className="text-gray-400 font-medium mb-8 max-w-md">Maaf, kami tidak dapat menemukan detail refund untuk ID pesanan #{id}.</p>
+                <Link to="/shop/orders" className="bg-primary text-[#051111] px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-primary/90 transition-all shadow-[0_8px_30px_rgba(34,197,94,0.3)]">
+                    Kembali ke Riwayat Pesanan
+                </Link>
+            </div>
+        )
+    }
 
-    const refundId = `RFD-${id || '88219'}`
-    const mockDate = "24 Okt 2023, 10:00 WIB"
-    const displayDate = refundDate || mockDate
-    const displayReason = reason || "Barang Rusak/Cacat. Raket yang diterima terdapat retakan halus pada bagian frame atas saat pertama kali dibuka dari kemasan."
+    const currentOrder = order
 
-    // Mock timeline status
-    // "Diajukan" -> "Sedang Ditinjau" -> "Disetujui" -> "Selesai"
-    const currentStep = 4 // 1: Diajukan, 2: Ditinjau, 3: Disetujui, 4: Selesai
+    const refundId = `RFD-${order.orderCode || '88219'}`
 
-    const steps = [
-        { id: 1, label: "Diajukan", sub: "24 Okt 2023, 10:00", icon: FileText },
-        { id: 2, label: "Sedang Ditinjau", sub: "Selesai Ditinjau", icon: Check },
-        { id: 3, label: "Disetujui", sub: "25 Okt 2023, 09:15", icon: Clock },
-        { id: 4, label: "Selesai", sub: "25 Okt 2023, 14:30", icon: ShieldCheck },
+    // Format date helper
+    const formatDate = (dateStr: string | null) => {
+        if (!dateStr) return null
+        const d = new Date(dateStr)
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB'
+    }
+
+    // Use API refund dates
+    const displayDate = formatDate(order.refundRequestDate) || order.date
+    const displayReason = reason || "Barang Rusak/Cacat"
+
+    // Refund status from API: 0 = none, 1 = pending, 2 = approved, 3 = rejected
+    const refundStatusNum = order.refundStatus ?? 0
+    const statusUpdateDate = formatDate(order.refundStatusUpdateDate) || "Menunggu hasil peninjauan"
+
+    // Step 2 configurations based on numeric refund status
+    const getStep2Config = () => {
+        switch (refundStatusNum) {
+            case 1: // APPROVED
+                return { label: "Disetujui", sub: statusUpdateDate, icon: Check, color: "bg-primary" };
+            case 2: // REJECTED
+                return { label: "Ditolak", sub: statusUpdateDate, icon: XCircle, color: "bg-red-500" };
+            default: // 1 = PENDING
+                return { label: "Sedang Ditinjau", sub: "Permintaan sedang diproses", icon: Clock, color: "bg-yellow-500" };
+        }
+    }
+
+    const step2 = getStep2Config();
+    const currentStep = refundStatusNum <= 1 ? 1 : 2
+
+    const steps: { id: number; label: string; sub: string; icon: any; color: string }[] = [
+        { id: 0, label: "Diajukan", sub: displayDate, icon: FileText, color: "bg-primary" },
+        { id: 1, label: step2.label, sub: step2.sub, icon: step2.icon, color: step2.color },
     ]
 
     const formatPrice = (price: number) => {
@@ -111,8 +137,8 @@ export default function ShopRefundDetailPage() {
                                     <div key={step.id} className="flex flex-col items-center flex-1 text-center mb-6 md:mb-0 relative group">
                                         <div className={cn(
                                             "w-10 h-10 rounded-full flex items-center justify-center mb-4 transition-all duration-500 border-2 relative z-10",
-                                            isCompleted ? "bg-primary border-primary shadow-[0_0_20px_rgba(0,214,181,0.4)]" :
-                                                isActive ? "bg-[#0a1a1a] border-primary text-primary shadow-[0_0_15px_rgba(0,214,181,0.2)]" :
+                                            isCompleted ? `${step.color} border-transparent shadow-[0_0_20px_rgba(0,214,181,0.4)]` :
+                                                isActive ? `bg-[#0a1a1a] border-primary text-primary shadow-[0_0_15px_rgba(34,197,94,0.2)]` :
                                                     "bg-[#0a1a1a] border-white/10 text-gray-600"
                                         )}>
                                             {isCompleted ? <Check className="w-5 h-5 text-[#051111]" /> : <Icon className={cn("w-5 h-5", isActive ? "text-primary animate-pulse" : "text-gray-600")} />}
@@ -154,9 +180,9 @@ export default function ShopRefundDetailPage() {
                                     <p className="font-bold text-lg">{displayDate}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-2">ID PESANAN ASLI</p>
+                                    <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-2">KODE PESANAN ASLI</p>
                                     <Link to={`/shop/order/${currentOrder.id}`} className="font-bold text-lg text-primary hover:underline">
-                                        #{currentOrder.id}
+                                        #{currentOrder.orderCode}
                                     </Link>
                                 </div>
                             </div>
@@ -192,11 +218,16 @@ export default function ShopRefundDetailPage() {
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className="text-lg font-bold group-hover:text-primary transition-colors">{item.name}</h3>
-                                                <span className="text-lg font-bold text-primary">{formatPrice(item.price)}</span>
+                                                <div className="text-right">
+                                                    <div className="text-lg font-bold text-primary">{formatPrice(item.price * item.quantity)}</div>
+                                                    {item.quantity > 1 && (
+                                                        <div className="text-[10px] text-gray-400 font-bold">{item.quantity} x {formatPrice(item.price)}</div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <p className="text-sm text-gray-500 mb-2 font-medium">{item.variant || 'Standard'}</p>
+                                            <p className="text-sm text-gray-500 mb-2 font-medium italic">{item.variantName || item.category || 'Variant Standard'}</p>
                                             <div className="flex justify-between items-center text-sm font-bold text-gray-400">
-                                                <span>{item.quantity} x {formatPrice(item.price)}</span>
+                                                <span>Jumlah: {item.quantity}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -232,15 +263,6 @@ export default function ShopRefundDetailPage() {
                                 <div className="flex items-end gap-1">
                                     <span className="text-primary text-sm font-bold mb-1">Rp</span>
                                     <span className="text-3xl font-black text-primary">{formatPrice(currentOrder.total).replace('Rp ', '')}</span>
-                                </div>
-                                <span className="text-[10px] font-bold text-gray-600 uppercase">DIKEMBALIKAN KE:</span>
-                            </div>
-
-                            <div className="bg-[#051111] border border-white/5 rounded-xl p-4 flex items-center gap-3">
-                                <div className="bg-white/10 px-2 py-1 rounded text-[10px] font-bold text-white uppercase italic tracking-tighter">GoPay</div>
-                                <div>
-                                    <div className="text-xs font-bold text-white">E-Wallet</div>
-                                    <div className="text-[10px] text-gray-500">0812****5678 a/n John Doe</div>
                                 </div>
                             </div>
                         </div>

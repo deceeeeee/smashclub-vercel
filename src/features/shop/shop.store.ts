@@ -6,15 +6,21 @@ import { useAuthStore } from '../auth/auth.store';
 
 export interface ShopOrder {
     id: string;
+    orderCode: string;
     items: CartItem[];
+    orderItemImgLink: string;
     subtotal: number;
     shipping: number;
     insurance: number;
     serviceFee: number;
     total: number;
-    status: 'MENUNGGU PEMBAYARAN' | 'DIPROSES' | 'SIAP DIAMBIL' | 'SELESAI' | 'DIBATALKAN';
-    paymentMethod: string;
+    status: 'DIBATALKAN' | 'MENUNGGU PEMBAYARAN' | 'DIPROSES' | 'SIAP DIAMBIL' | 'SELESAI';
     date: string;
+    rawDate: string;
+    refundStatus: number;
+    refundRequestDate: string | null;
+    refundStatusUpdateDate: string | null;
+    updatedAt: string | null;
 }
 
 interface ShopState {
@@ -49,138 +55,15 @@ interface ShopState {
     getTotalItems: () => number;
     getSubtotal: () => number;
     buyNowAPI: (variantId: number, quantity: number) => Promise<any>;
+    checkoutCartAPI: (data?: any) => Promise<any>;
+    getOrderHistoryAPI: (page?: number, pageSize?: number) => Promise<void>;
+    getOrderSummaryAPI: (orderId: number) => Promise<any>;
+    refundRequestAPI: (orderId: string, reason: string) => Promise<any>;
     openBuyNowModal: (product: Product, variant?: ProductVariant, quantity?: number) => void;
     closeBuyNowModal: () => void;
     openAddToCartModal: (product: Product, variant?: ProductVariant, quantity?: number) => void;
     closeAddToCartModal: () => void;
 }
-
-export const MOCK_PRODUCTS: Product[] = [
-    {
-        id: '1',
-        name: 'Pro Staff V14',
-        category: 'Raket',
-        price: 3500000,
-        image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop',
-        images: [
-            'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=2070&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1560012057-4372e14c5085?q=80&w=1974&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1617083281297-af33e89640bb?q=80&w=2070&auto=format&fit=crop'
-        ],
-        isHot: true,
-        description: 'Didesain untuk pemain yang mengutamakan kontrol dan presisi. Pro Staff V14 membawa warisan klasik dengan sentuhan modern.',
-        fullDescription: 'Didesain untuk pemain yang mengutamakan kontrol dan presisi. Pro Staff V14 membawa warisan klasik dengan sentuhan modern. Teknologi Braid 45 memberikan stabilitas yang luar biasa di setiap pukulan, memberikan rasa solid yang menjadi ciri khas seri legendaris ini.',
-        gripSizes: ['L2', 'L3', 'L4'],
-        specifications: {
-            'Weight (Unstrung)': '315 g / 11.1 oz',
-            'Balance': '31 cm / 10 pts HL',
-            'String Pattern': '16 x 19'
-        }
-    },
-    {
-        id: '2',
-        name: 'Babolat Pure Aero',
-        category: 'Raket',
-        price: 3200000,
-        image: 'https://images.unsplash.com/photo-1617083281297-af33e89640bb?q=80&w=2070&auto=format&fit=crop',
-        gripSizes: ['L1', 'L2', 'L3'],
-        specifications: {
-            'Weight (Unstrung)': '300 g / 10.6 oz',
-            'Balance': '32 cm / 7 pts HL',
-            'String Pattern': '16 x 19'
-        }
-    },
-    {
-        id: '3',
-        name: 'Slazenger 4pc',
-        category: 'Bola',
-        price: 150000,
-        image: 'https://unsplash.com/photos/a-tennis-ball-on-a-table-hH_wY-p0X0k',
-        specifications: {
-            'Weight': '30 g',
-            'Diameter': '5.2 cm',
-            'Number of Balls': '4'
-        }
-    },
-    {
-        id: '4',
-        name: 'Nike Court Air',
-        category: 'Sepatu',
-        price: 1800000,
-        image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=1925&auto=format&fit=crop',
-        sizes: ['39', '40', '41', '42', '43', '44'],
-        specifications: {
-            'Weight': '305 g / 10.8 oz',
-        }
-    },
-    {
-        id: '5',
-        name: 'Yonex VCORE 98',
-        category: 'Raket',
-        price: 3100000,
-        image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=2070&auto=format&fit=crop',
-        gripSizes: ['L2', 'L3'],
-        specifications: {
-            'Weight (Unstrung)': '305 g / 10.8 oz',
-            'Balance': '31.5 cm / 9 pts HL',
-            'String Pattern': '16 x 19'
-        }
-    },
-    {
-        id: '6',
-        name: 'Head Gravity MP',
-        category: 'Raket',
-        price: 2900000,
-        image: 'https://images.unsplash.com/photo-1560012057-4372e14c5085?q=80&w=1974&auto=format&fit=crop',
-        isNew: true,
-        gripSizes: ['L2', 'L3'],
-        specifications: {
-            'Weight (Unstrung)': '295 g / 10.4 oz',
-            'Balance': '32.5 cm / 5 pts HL',
-            'String Pattern': '16 x 20'
-        }
-    },
-    {
-        id: '7',
-        name: 'Adidas Ergo Shorts',
-        category: 'Pakaian',
-        price: 450000,
-        image: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?q=80&w=2070&auto=format&fit=crop',
-        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-    },
-    {
-        id: '9',
-        name: 'Yonex Astrox 88D Pro',
-        category: 'Raket',
-        price: 2500000,
-        image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop',
-        gripSizes: ['4U/G5'],
-        isHot: true,
-        description: 'Varian: 4U/G5 - Camel Gold'
-    },
-    {
-        id: '10',
-        name: 'Lining Saga II Professional',
-        category: 'Sepatu',
-        price: 1450000,
-        image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=1925&auto=format&fit=crop',
-        sizes: ['40', '41', '42', '43'],
-        description: 'Ukuran: 42 EU - Red/White'
-    },
-    {
-        id: '8',
-        name: 'Wilson Roland Garros',
-        category: 'Bola',
-        price: 180000,
-        image: 'https://drive.google.com/file/d/1Pv5m8PSQHcF-RkgYCdqGWRxRlu_BST0R/view?usp=sharing',
-        specifications: {
-            'Weight': '30 g',
-            'Diameter': '5.5 cm',
-            'Number of Balls': '4'
-        }
-    },
-];
 
 const mapAPICartItems = (items: any[]): CartItem[] => {
     return items
@@ -235,9 +118,71 @@ const mapAPICartItems = (items: any[]): CartItem[] => {
                 price,
                 image,
                 quantity: apiItem.quantity ?? 1,
+                variantName: variantName ?? '',
+                variantImgLink: variant?.variantImgLink ?? image ?? '',
             } as CartItem;
         })
         .filter(Boolean) as CartItem[];
+};
+
+const mapAPIOrderToShopOrder = (apiOrder: any): ShopOrder => {
+    const statusMap: Record<number, ShopOrder['status']> = {
+        0: 'DIBATALKAN',
+        1: 'MENUNGGU PEMBAYARAN',
+        2: 'DIPROSES',
+        3: 'SIAP DIAMBIL',
+        4: 'SELESAI'
+    };
+
+    // Items mapping — order summary API has items[], order history API does not
+    const rawItems = apiOrder.items || apiOrder.orderItems || [];
+    const items: CartItem[] = rawItems.map((item: any) => {
+        const productName = item.productName || item.product?.productName || item.variantName || 'Produk';
+        const image = item.orderItemImgLink || item.image || item.imgLink || item.variantImgLink || item.product?.defaultImgLink || '';
+        const variantName = item.variantName || '';
+
+        return {
+            id: (item.productId || item.id || item.variantId || Math.random()).toString(),
+            name: productName,
+            category: item.category || item.product?.category || 'Kategori',
+            price: item.price || item.priceAtAdd || 0,
+            image: image,
+            quantity: item.quantity || 1,
+            variantName: variantName,
+            variantImgLink: item.variantImgLink || image
+        } as CartItem;
+    });
+
+    // Top-level image from order history API (flat structure, no items array)
+    const orderItemImgLink = apiOrder.orderItemImgLink || items[0]?.variantImgLink || items[0]?.image || '';
+
+    const orderDateRaw = apiOrder.orderDate || apiOrder.order_date || apiOrder.createdAt || apiOrder.created_at;
+    const dateObj = orderDateRaw ? new Date(orderDateRaw) : new Date();
+
+    return {
+        id: (apiOrder.orderId || apiOrder.id)?.toString() || '',
+        items,
+        orderItemImgLink,
+        orderCode: apiOrder.orderCode || '',
+        subtotal: apiOrder.subtotal || apiOrder.totalPrice || apiOrder.total_price || 0,
+        shipping: apiOrder.shippingFee || 0,
+        insurance: apiOrder.insuranceFee || 0,
+        serviceFee: apiOrder.serviceFee || 0,
+        total: apiOrder.totalPrice || apiOrder.total_price || 0,
+        status: statusMap[apiOrder.status] || 'MENUNGGU PEMBAYARAN',
+        date: dateObj.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) + ' WIB',
+        rawDate: dateObj.toISOString(),
+        refundStatus: apiOrder.refundStatus ?? 0,
+        refundRequestDate: apiOrder.refundRequestDate ?? null,
+        refundStatusUpdateDate: apiOrder.refundStatusUpdateDate ?? null,
+        updatedAt: apiOrder.updatedAt ?? null
+    };
 };
 
 export const useShopStore = create<ShopState>()(
@@ -245,7 +190,7 @@ export const useShopStore = create<ShopState>()(
         (set, get) => ({
             cart: [],
             isCartOpen: false,
-            products: MOCK_PRODUCTS,
+            products: [],
             orderHistory: [],
             isLoading: false,
             error: null,
@@ -367,7 +312,14 @@ export const useShopStore = create<ShopState>()(
                         ),
                     });
                 } else {
-                    set({ cart: [...cart, { ...product, quantity: quantity || 1 }] });
+                    set({
+                        cart: [...cart, {
+                            ...product,
+                            quantity: quantity || 1,
+                            variantName: '',
+                            variantImgLink: product.image || ''
+                        }]
+                    });
                 }
                 set({ isCartOpen: true });
             },
@@ -449,7 +401,7 @@ export const useShopStore = create<ShopState>()(
                 set({ isLoading: true, error: null });
                 try {
                     const response = await shopService.buyNow({ variantId, quantity });
-                    if (response.message.includes('successfully')) {
+                    if (response.message.includes('successfully') || response.data) {
                         // Optionally clear cart or update order history
                         // For now we just return the response
                         set({ isLoading: false });
@@ -460,6 +412,67 @@ export const useShopStore = create<ShopState>()(
                     }
                 } catch (error: any) {
                     set({ error: error.message || 'Failed to buy product', isLoading: false });
+                    throw error;
+                }
+            },
+            checkoutCartAPI: async (data: any = {}) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.checkout(data);
+                    if (response.message.includes('successfully') || response.data) {
+                        set({ cart: [], isLoading: false });
+                        return response;
+                    } else {
+                        set({ error: response.message || 'Failed to checkout', isLoading: false });
+                        return response;
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to checkout cart', isLoading: false });
+                    throw error;
+                }
+            },
+            getOrderHistoryAPI: async (page = 0, pageSize = 25) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.getOrderHistory(page, pageSize) as any;
+                    // Handle pagination or array return
+                    const items = response.data?.content || response.data || [];
+                    const apiOrders = Array.isArray(items) ? items : [items].filter(Boolean);
+
+                    const mappedOrders = apiOrders.map(mapAPIOrderToShopOrder);
+                    set({ orderHistory: mappedOrders, isLoading: false });
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to fetch order history', isLoading: false });
+                }
+            },
+            getOrderSummaryAPI: async (orderId: number) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.getOrderSummary(orderId);
+                    if (response && response.data) {
+                        const mappedOrder = mapAPIOrderToShopOrder(response.data);
+                        set((state) => ({
+                            orderHistory: state.orderHistory.some(o => o.id === mappedOrder.id)
+                                ? state.orderHistory.map(o => o.id === mappedOrder.id ? mappedOrder : o)
+                                : [mappedOrder, ...state.orderHistory],
+                            isLoading: false
+                        }));
+                    }
+                    set({ isLoading: false });
+                    return response;
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to fetch order summary', isLoading: false });
+                    throw error;
+                }
+            },
+            refundRequestAPI: async (orderCode: string, reason: string) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.requestRefund(orderCode, reason);
+                    set({ isLoading: false });
+                    return response;
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to submit refund request', isLoading: false });
                     throw error;
                 }
             },
@@ -475,7 +488,7 @@ export const useShopStore = create<ShopState>()(
                 buyNowStartingQuantity: 1,
                 isBuyNowModalOpen: false
             }),
-            openAddToCartModal: (product, variant, quantity) => set({
+            openAddToCartModal: (product: Product, variant?: ProductVariant, quantity?: number) => set({
                 addToCartProduct: product,
                 addToCartStartingVariant: variant || (product.variants?.[0] || null),
                 addToCartStartingQuantity: quantity || 1,
@@ -490,7 +503,7 @@ export const useShopStore = create<ShopState>()(
         }),
         {
             name: 'smashclub-shop-storage',
-            partialize: (state) => ({
+            partialize: (state: ShopState) => ({
                 cart: state.cart,
                 orderHistory: state.orderHistory
             }),
