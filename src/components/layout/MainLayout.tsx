@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query"
 import { authService } from "../../features/auth/auth.service"
 
 export default function MainLayout() {
-    const { token, updateUser, logout } = useAuthStore()
+    const { token, updateUser, logout, fetchWalletBalance } = useAuthStore()
 
     // Sync session on app initialization
     const { data: sessionData, isError, error } = useQuery({
@@ -19,6 +19,12 @@ export default function MainLayout() {
         retry: 1,
         refetchOnWindowFocus: false,
     })
+
+    useEffect(() => {
+        if (token) {
+            fetchWalletBalance()
+        }
+    }, [token, fetchWalletBalance])
 
     useEffect(() => {
         if (sessionData?.success && sessionData.data) {

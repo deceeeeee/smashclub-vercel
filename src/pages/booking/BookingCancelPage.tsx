@@ -4,6 +4,7 @@ import { ChevronRight, HelpCircle, Check, Home, ClipboardList, ArrowRight, Loade
 import { cn } from "../../lib/utils"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { bookingService } from "../../features/booking/booking.service"
+import { transactionService } from "../../features/booking/transaction.service"
 import dayjs from 'dayjs'
 import 'dayjs/locale/id'
 
@@ -25,9 +26,28 @@ export default function BookingCancelPage() {
     });
 
     const booking = bookingResponse?.data;
+    const bookingCodeValue = booking?.bookingCode || bookingCode;
+
+    // Fetch transaction detail to get referenceCode
+    const { data: transactionResponse } = useQuery({
+        queryKey: ['transaction-detail', bookingCodeValue],
+        queryFn: () => transactionService.getTransactionDetail(bookingCodeValue!),
+        enabled: !!bookingCodeValue
+    });
+
+    const transaction = transactionResponse?.data;
 
     const cancelMutation = useMutation({
-        mutationFn: (reason: string) => bookingService.updateBookingStatus(bookingCode!, 0, reason),
+        mutationFn: async (reason: string) => {
+            // First update the booking status (and reason)
+            await bookingService.updateBookingStatus(bookingCode!, 0, reason);
+
+            // If there's a reference code (from booking or transaction detail), cancel the transaction
+            const referenceCode = booking?.respCreateTransactionDTO?.referenceCode || transaction?.referenceCode;
+            if (referenceCode) {
+                await transactionService.cancelTransactionByReference(referenceCode);
+            }
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['booking-detail', bookingCode] });
             queryClient.invalidateQueries({ queryKey: ['my-bookings'] });

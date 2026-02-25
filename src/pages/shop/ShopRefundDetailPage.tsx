@@ -1,5 +1,5 @@
 import { useLocation, useParams, Link } from "react-router-dom"
-import { Check, Clock, Copy, MessageSquare, ShieldCheck, FileText, Package } from "lucide-react"
+import { Check, Clock, Copy, MessageSquare, ShieldCheck, FileText, Package, XCircle, Wallet } from "lucide-react"
 import { useShopStore } from "../../features/shop/shop.store"
 import { cn } from "../../lib/utils"
 
@@ -10,7 +10,11 @@ export default function ShopRefundDetailPage() {
 
     // Get data passed from previous page or mock it
     const locationState = location.state || {}
-    const { reason, additionalInfo, refundDate } = locationState
+    const { reason, additionalInfo, refundDate, status } = locationState
+
+    // Map status to current step
+    // Status can be: 'PENGAJUAN', 'PROSES', 'BERHASIL', 'DITOLAK'
+    const refundStatus = status || 'BERHASIL'
 
     // Find the order in history or use mock
     const order = orderHistory.find(o => o.id === id)
@@ -49,15 +53,20 @@ export default function ShopRefundDetailPage() {
     const displayDate = refundDate || mockDate
     const displayReason = reason || "Barang Rusak/Cacat. Raket yang diterima terdapat retakan halus pada bagian frame atas saat pertama kali dibuka dari kemasan."
 
-    // Mock timeline status
-    // "Diajukan" -> "Sedang Ditinjau" -> "Disetujui" -> "Selesai"
-    const currentStep = 4 // 1: Diajukan, 2: Ditinjau, 3: Disetujui, 4: Selesai
+    // Mock timeline status logic
+    let currentStep = 1
+    if (refundStatus === 'PROSES') currentStep = 2
+    if (refundStatus === 'BERHASIL' || refundStatus === 'DITOLAK') currentStep = 3
 
     const steps = [
-        { id: 1, label: "Diajukan", sub: "24 Okt 2023, 10:00", icon: FileText },
-        { id: 2, label: "Sedang Ditinjau", sub: "Selesai Ditinjau", icon: Check },
-        { id: 3, label: "Disetujui", sub: "25 Okt 2023, 09:15", icon: Clock },
-        { id: 4, label: "Selesai", sub: "25 Okt 2023, 14:30", icon: ShieldCheck },
+        { id: 1, label: "Pengajuan", sub: "24 Okt 2023, 10:00", icon: FileText },
+        { id: 2, label: "Diproses", sub: currentStep > 2 ? "Selesai Ditinjau" : "Sedang Ditinjau", icon: Clock },
+        {
+            id: 3,
+            label: refundStatus === 'DITOLAK' ? "Ditolak" : "Berhasil",
+            sub: currentStep === 3 ? "25 Okt 2023, 14:30" : "Menunggu Selesai",
+            icon: refundStatus === 'DITOLAK' ? XCircle : ShieldCheck
+        },
     ]
 
     const formatPrice = (price: number) => {
@@ -111,15 +120,19 @@ export default function ShopRefundDetailPage() {
                                     <div key={step.id} className="flex flex-col items-center flex-1 text-center mb-6 md:mb-0 relative group">
                                         <div className={cn(
                                             "w-10 h-10 rounded-full flex items-center justify-center mb-4 transition-all duration-500 border-2 relative z-10",
-                                            isCompleted ? "bg-primary border-primary shadow-[0_0_20px_rgba(0,214,181,0.4)]" :
+                                            isCompleted ? (refundStatus === 'DITOLAK' && step.id === 3 ? "bg-red-500 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)]" : "bg-primary border-primary shadow-[0_0_20px_rgba(0,214,181,0.4)]") :
                                                 isActive ? "bg-[#0a1a1a] border-primary text-primary shadow-[0_0_15px_rgba(0,214,181,0.2)]" :
                                                     "bg-[#0a1a1a] border-white/10 text-gray-600"
                                         )}>
-                                            {isCompleted ? <Check className="w-5 h-5 text-[#051111]" /> : <Icon className={cn("w-5 h-5", isActive ? "text-primary animate-pulse" : "text-gray-600")} />}
+                                            {isCompleted ? (
+                                                refundStatus === 'DITOLAK' && step.id === 3 ? <XCircle className="w-5 h-5 text-white" /> : <Check className="w-5 h-5 text-[#051111]" />
+                                            ) : (
+                                                <Icon className={cn("w-5 h-5", isActive ? "text-primary animate-pulse" : "text-gray-600")} />
+                                            )}
                                         </div>
                                         <h3 className={cn(
                                             "font-bold text-sm mb-1 transition-colors",
-                                            isActive || isCompleted ? "text-white" : "text-gray-500"
+                                            isActive || isCompleted ? (refundStatus === 'DITOLAK' && step.id === 3 ? "text-red-500" : "text-white") : "text-gray-500"
                                         )}>
                                             {step.label}
                                         </h3>

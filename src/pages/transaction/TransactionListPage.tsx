@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { transactionService, type Transaction } from "../../features/booking/transaction.service"
 import dayjs from 'dayjs'
 import { Link } from "react-router-dom"
-import { Search, Loader2, CreditCard, ChevronRight, ArrowLeft, Filter } from "lucide-react"
+import { Search, Loader2, CreditCard, ChevronRight, ArrowLeft, Filter, Zap } from "lucide-react"
 import { cn } from "../../lib/utils"
 
 export default function TransactionListPage() {
@@ -49,6 +49,9 @@ export default function TransactionListPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    <Link to="/top-up" className="flex items-center gap-2 bg-primary text-[#051111] px-5 py-2.5 rounded-xl text-sm font-black hover:bg-primary/90 transition-all shadow-lg shadow-primary/5 active:scale-95">
+                        <Zap className="w-4 h-4 fill-current" /> Top Up
+                    </Link>
                     <button className="flex items-center gap-2 bg-[#16282a] border border-gray-800 px-4 py-2.5 rounded-xl text-sm font-bold text-white hover:bg-[#1c3235] transition-all">
                         <Filter className="w-4 h-4 text-primary" /> Filter
                     </button>

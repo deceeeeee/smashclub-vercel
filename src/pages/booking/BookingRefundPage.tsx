@@ -197,7 +197,7 @@ export default function BookingRefundPage() {
                             {/* Buttons */}
                             <div className="space-y-4 max-w-xs mx-auto">
                                 <button
-                                    onClick={() => navigate(`/booking/${currentBooking.id}/refund-details`, { state: { reason: selectedReason, additionalInfo } })}
+                                    onClick={() => navigate(`/booking/${currentBooking.id}/refund-details`, { state: { reason: selectedReason, additionalInfo, status: 'PENGAJUAN' } })}
                                     className="w-full bg-white/5 border border-white/10 text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all shadow-[0_4px_30px_rgba(0,214,181,0.2)]"
                                 >
                                     <ClipboardList className="w-5 h-5 flex-shrink-0" /> Lihat Detail Refund
