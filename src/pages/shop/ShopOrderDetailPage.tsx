@@ -166,7 +166,7 @@ export default function ShopOrderDetailPage() {
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
                             {/* Refund button logic */}
-                            {currentOrder.refundStatus === 1 ? (
+                            {currentOrder.refundStatus === 1 || currentOrder.status === 'DIBATALKAN' ? (
                                 <Link
                                     to={`/shop/order/${currentOrder.id}/refund-details`}
                                     className="px-6 py-3 rounded-xl border border-purple-500/30 text-purple-500 hover:bg-purple-500/5 transition-all text-xs font-black flex items-center gap-2"

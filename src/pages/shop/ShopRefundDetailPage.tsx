@@ -73,7 +73,7 @@ export default function ShopRefundDetailPage() {
                 return { label: "Disetujui", sub: statusUpdateDate, icon: Check, color: "bg-primary" };
             case 2: // REJECTED
                 return { label: "Ditolak", sub: statusUpdateDate, icon: XCircle, color: "bg-red-500" };
-            default: // 1 = PENDING
+            default: // REQUESTED, WAITING FOR APPROVAL
                 return { label: "Sedang Ditinjau", sub: "Permintaan sedang diproses", icon: Clock, color: "bg-yellow-500" };
         }
     }
@@ -125,37 +125,39 @@ export default function ShopRefundDetailPage() {
 
                     <div className="relative z-10">
                         <div className="flex flex-col md:flex-row justify-between relative">
-                            {/* Connector Line */}
-                            <div className="absolute top-5 left-0 w-full h-0.5 bg-white/5 hidden md:block -z-10" />
+                            {/* Connector Line — spans between the centers of step 1 and step 2 */}
+                            <div className="absolute top-7 left-1/4 right-1/4 h-0.5 bg-white/5 hidden md:block -z-10" />
 
                             {steps.map((step) => {
-                                const isCompleted = step.id <= currentStep
+                                const isCompleted = step.id < currentStep
                                 const isActive = step.id === currentStep
                                 const Icon = step.icon
 
                                 return (
                                     <div key={step.id} className="flex flex-col items-center flex-1 text-center mb-6 md:mb-0 relative group">
                                         <div className={cn(
-                                            "w-10 h-10 rounded-full flex items-center justify-center mb-4 transition-all duration-500 border-2 relative z-10",
+                                            "w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-all duration-500 border-2 relative z-10",
                                             isCompleted ? `${step.color} border-transparent shadow-[0_0_20px_rgba(0,214,181,0.4)]` :
-                                                isActive ? `bg-[#0a1a1a] border-primary text-primary shadow-[0_0_15px_rgba(34,197,94,0.2)]` :
+                                                isActive ? `${step.color} border-transparent shadow-[0_0_20px_rgba(0,214,181,0.4)]` :
                                                     "bg-[#0a1a1a] border-white/10 text-gray-600"
                                         )}>
                                             {isCompleted ? (
-                                                refundStatusNum === 2 && step.id === 3 ? <XCircle className="w-5 h-5 text-white" /> : <Check className="w-5 h-5 text-[#051111]" />
+                                                <Check className="w-6 h-6 text-[#051111]" />
+                                            ) : isActive ? (
+                                                <Icon className="w-6 h-6 text-[#051111]" />
                                             ) : (
-                                                <Icon className={cn("w-5 h-5", isActive ? "text-primary animate-pulse" : "text-gray-600")} />
+                                                <Icon className="w-6 h-6 text-gray-600" />
                                             )}
                                         </div>
                                         <h3 className={cn(
-                                            "font-bold text-sm mb-1 transition-colors",
+                                            "font-bold text-base mb-1 transition-colors",
                                             isActive || isCompleted ? (refundStatusNum === 2 && step.id === 3 ? "text-red-500" : "text-white") : "text-gray-500"
                                         )}>
                                             {step.label}
                                         </h3>
                                         {step.sub && (
                                             <p className={cn(
-                                                "text-[10px] font-medium transition-colors",
+                                                "text-xs font-medium transition-colors",
                                                 isCompleted ? "text-gray-400" : "text-gray-600"
                                             )}>{step.sub}</p>
                                         )}
