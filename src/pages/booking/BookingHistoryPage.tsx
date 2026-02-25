@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
-import { bookingService, type BookingDetail } from "../../features/booking/booking.service"
+import { bookingService } from "../../features/booking/booking.service"
+import type { BookingDetail } from "../../features/booking/booking.types"
 import dayjs from 'dayjs'
 import { Link } from "react-router-dom"
 import { Calendar, ChevronRight, RefreshCw, Search, ChevronLeft, Loader2 } from "lucide-react"
@@ -115,11 +116,6 @@ export default function BookingHistoryPage() {
                                     {(booking.statusDescription === 'COMPLETED' || booking.statusDescription === 'SELESAI') && (
                                         <Link to="/booking" className="bg-primary text-[#051111] px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-[0_4px_15px_rgba(34,197,94,0.2)]">
                                             <Calendar className="w-4 h-4" /> Booking Lagi
-                                        </Link>
-                                    )}
-                                    {(booking.statusDescription === 'PENDING' || booking.statusDescription === 'MENUNGGU BAYAR') && (
-                                        <Link to={`/orders/${booking.bookingCode}`} className="bg-primary text-[#051111] px-5 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-[0_4px_15px_rgba(34,197,94,0.2)]">
-                                            Bayar Sekarang
                                         </Link>
                                     )}
                                     {(booking.statusDescription === 'CANCELLED' || booking.statusDescription === 'DIBATALKAN') && (

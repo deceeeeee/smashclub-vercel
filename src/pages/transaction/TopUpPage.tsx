@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useAuthStore } from '../../features/auth/auth.store';
 import { useNavigate, Link } from 'react-router-dom';
 import {
     ArrowLeft,
@@ -11,22 +10,22 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useMutation } from '@tanstack/react-query';
+import { useWalletStore } from '../../features/wallet/wallet.store';
 import { walletService } from '../../features/wallet/wallet.service';
 
 export default function TopUpPage() {
-    const { walletBalance } = useAuthStore();
+    const { balance } = useWalletStore();
     const navigate = useNavigate();
     const [selectedAmount, setSelectedAmount] = useState<number | null>(100000);
     const [customAmount, setCustomAmount] = useState<string>('');
 
     const topUpMutation = useMutation({
-        mutationFn: (amount: number) => walletService.topUp({ amount }),
-        onSuccess: (response) => {
+        mutationFn: (amount: number) => walletService.topUp({ balance: amount }),
+        onSuccess: (response: any) => {
             const data = response.data;
             if (data?.transactionCode) {
-                navigate(`/top-up/history/${data.transactionCode}`, {
-                    state: { invoiceUrl: data.paymentData?.invoiceUrl }
-                });
+                window.open(data.paymentData?.invoiceUrl, "_blank");
+                navigate(`/top-up/history/${data.transactionCode}`);
             } else {
                 alert('Top Up Berhasil!');
                 navigate('/top-up/history');
@@ -112,7 +111,7 @@ export default function TopUpPage() {
                     <div className="relative z-10 text-[#051111]">
                         <p className="text-[11px] font-black uppercase tracking-[0.2em] mb-3 opacity-70">Dompet SmashPay</p>
                         <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight">
-                            {formatCurrency(walletBalance)}
+                            {formatCurrency(balance)}
                         </h2>
 
                         <div className="flex flex-wrap items-center gap-4">

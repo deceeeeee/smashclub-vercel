@@ -1,5 +1,5 @@
 export interface WalletResponse<T> {
-    path: string;
+    path?: string;
     data: T;
     success: boolean;
     message: string;
@@ -8,7 +8,7 @@ export interface WalletResponse<T> {
 }
 
 export interface TopUpRequest {
-    amount: number;
+    balance: number;
 }
 
 export interface TopUpData {
@@ -17,3 +17,20 @@ export interface TopUpData {
         invoiceUrl: string;
     };
 }
+
+export interface WalletLog {
+    id: number;
+    previousBalance: number;
+    currentBalance: number;
+    usageValue: number;
+    usageType: boolean;
+    refID: string;
+    createdAt: string;
+}
+
+export interface WalletBalanceData {
+    walletLogs: WalletLog[];
+    userBalance: number;
+}
+
+export type WalletBalanceResponse = WalletResponse<WalletBalanceData>;

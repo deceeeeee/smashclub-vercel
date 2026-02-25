@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
-import { bookingService, type BookingDetail } from "../../features/booking/booking.service"
+import { bookingService } from "../../features/booking/booking.service"
 import dayjs from 'dayjs'
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom"
-import { Calendar, Clock, CheckCircle, ExternalLink, User, MapPin, ArrowLeft, XCircle, Loader2 } from "lucide-react"
+import { Calendar, Clock, CheckCircle, ExternalLink, User, MapPin, ArrowLeft, XCircle, Loader2, CreditCard } from "lucide-react"
+import { useBookingStore } from "../../features/booking/booking.store"
 import { cn } from "../../lib/utils";
 
 export default function BookingHistoryDetailPage() {
@@ -10,17 +11,11 @@ export default function BookingHistoryDetailPage() {
     const navigate = useNavigate();
     const location = useLocation();
     const bookingId = id || location.state?.bookingCode;
+    const { setCourtId, setSelectedCoach, setSelectedEquipments, setSelectedSlots } = useBookingStore();
 
     const { data: bookingResponse, isLoading, error } = useQuery({
         queryKey: ['booking-history-detail', bookingId],
-        queryFn: async () => {
-            const response = await bookingService.getMyBookings(0, 100); // Fetch a larger batch to find the specific booking
-            const foundBooking = response.data.content.find((b: BookingDetail) => b.bookingCode === bookingId);
-            return {
-                ...response,
-                data: foundBooking
-            };
-        },
+        queryFn: () => bookingService.getBookingDetails(bookingId!),
         enabled: !!bookingId
     });
 
@@ -61,6 +56,39 @@ export default function BookingHistoryDetailPage() {
     };
 
     const status = statusMapping[booking.statusDescription] || statusMapping[booking.status] || { label: booking.statusDescription || booking.status.toString(), color: 'bg-gray-500/10 border-gray-500/30 text-gray-400' };
+
+    const handleBookingLagi = () => {
+        setCourtId(booking.court.id.toString());
+        setSelectedCoach(null);
+        setSelectedEquipments([]);
+
+        // if (booking.coaches.length > 0) {
+        //     const c = booking.coaches[0];
+        //     setSelectedCoach({
+        //         id: c.id?.toString() || "",
+        //         name: c.coachName,
+        //         specialization: "Sesi Latihan Pro",
+        //         price: c.pricePerHour,
+        //         image: c.coachImgLink || ""
+        //     });
+        // }
+
+        // if (booking.equipment.length > 0) {
+        //     setSelectedEquipments(booking.equipment.map(e => ({
+        //         id: e.id?.toString() || "",
+        //         name: e.equipmentName,
+        //         price: e.pricePerUnit,
+        //         image: "",
+        //         quantity: e.quantity,
+        //         unit: e.categoryName === 'Bola' ? 'item' : 'sesi'
+        //     })));
+        // }
+
+        setSelectedSlots([]);
+        navigate(`/booking/schedule/${booking.court.id}`);
+    };
+
+    const isPendingPayment = booking.statusDescription === 'MENUNGGU BAYAR' || booking.statusDescription === 'PENDING' || booking.status === 1;
 
     const coachPrice = booking.coaches.reduce((acc: number, coach: any) => acc + coach.coachPrice, 0);
     const equipmentPrice = booking.equipment.reduce((acc: number, eq: any) => acc + eq.equipmentPrice, 0);
@@ -171,24 +199,6 @@ export default function BookingHistoryDetailPage() {
                                 </div>
                             </div>
                         )}
-
-                        {/* Metode Pembayaran */}
-                        <div className="bg-[#0a1a1a] border border-white/5 rounded-[2rem] p-8">
-                            <h2 className="text-xl font-bold text-white mb-6 uppercase tracking-tight">Metode Pembayaran</h2>
-                            <div className="bg-white/5 p-6 rounded-2xl border border-white/5 flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className="bg-white px-3 py-1.5 rounded-lg text-black font-black text-xs">BCA</div>
-                                    <div>
-                                        <div className="text-sm font-bold text-white">Transfer Bank (Virtual Account)</div>
-                                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">Bank Central Asia</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest">
-                                    <CheckCircle className="w-4 h-4" />
-                                    Terbayar
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Sidebar Summary - Right */}
@@ -224,11 +234,25 @@ export default function BookingHistoryDetailPage() {
                         </div>
 
                         <div className="space-y-4">
-                            <Link to="/booking" className="w-full py-5 bg-primary text-[#051111] font-black rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-3 shadow-[0_4px_30px_rgba(0,214,181,0.2)] text-sm uppercase tracking-widest">
-                                <Calendar className="w-5 h-5" /> Booking Lagi
-                            </Link>
+                            {isPendingPayment ? (
+                                <a
+                                    href={booking.respCreateTransactionDTO?.paymentData.invoiceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full py-5 bg-primary text-[#051111] font-black rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-3 shadow-[0_4px_30px_rgba(0,214,181,0.2)] text-sm uppercase tracking-widest"
+                                >
+                                    <CreditCard className="w-5 h-5" /> Lanjutkan Pembayaran
+                                </a>
+                            ) : (
+                                <button
+                                    onClick={handleBookingLagi}
+                                    className="w-full py-5 bg-primary text-[#051111] font-black rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-3 shadow-[0_4px_30px_rgba(0,214,181,0.2)] text-sm uppercase tracking-widest"
+                                >
+                                    <Calendar className="w-5 h-5" /> Booking Lagi
+                                </button>
+                            )}
 
-                            {['PENDING', 'MENUNGGU BAYAR', 'CONFIRMED', 'DIKONFIRMASI'].includes(booking.statusDescription) && (
+                            {['CONFIRMED', 'DIKONFIRMASI'].includes(booking.statusDescription) && (
                                 <Link to={`/booking/${booking.bookingCode}/cancel`} className="w-full py-5 bg-white/5 border border-white/10 text-white font-black rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center gap-3 text-sm uppercase tracking-widest">
                                     <XCircle className="w-5 h-5" /> Cancel Booking
                                 </Link>

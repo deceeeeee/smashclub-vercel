@@ -7,49 +7,18 @@ import {
     Filter,
     Home
 } from 'lucide-react';
-import { useAuthStore } from '../../features/auth/auth.store';
+import { useWalletStore } from '../../features/wallet/wallet.store';
 import { cn } from '../../lib/utils';
 import dayjs from 'dayjs';
+import { useEffect } from 'react';
 
 export default function TopUpHistoryPage() {
     const navigate = useNavigate();
-    const { walletBalance } = useAuthStore();
+    const { balance, logs, fetchBalance, isLoading } = useWalletStore();
 
-    // Mock Topup History Data
-    const mockHistory = [
-        {
-            id: 1,
-            date: '2023-10-24 14:20',
-            method: 'BCA Virtual Account',
-            amount: 100000,
-            status: 'SELESAI',
-            statusColor: 'text-[#00d6b5] bg-[#00d6b5]/10 border-[#00d6b5]/20'
-        },
-        {
-            id: 2,
-            date: '2023-10-22 09:15',
-            method: "Mandiri Livin'",
-            amount: 50000,
-            status: 'SELESAI',
-            statusColor: 'text-[#00d6b5] bg-[#00d6b5]/10 border-[#00d6b5]/20'
-        },
-        {
-            id: 3,
-            date: '2023-10-20 18:45',
-            method: 'Indomaret',
-            amount: 200000,
-            status: 'MENUNGGU',
-            statusColor: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20'
-        },
-        {
-            id: 4,
-            date: '2023-10-18 11:30',
-            method: 'Kartu Kredit',
-            amount: 150000,
-            status: 'GAGAL',
-            statusColor: 'text-red-500 bg-red-500/10 border-red-500/20'
-        }
-    ];
+    useEffect(() => {
+        fetchBalance();
+    }, [fetchBalance]);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('id-ID', {
@@ -57,6 +26,12 @@ export default function TopUpHistoryPage() {
             currency: 'IDR',
             minimumFractionDigits: 0,
         }).format(amount).replace('Rp', 'Rp ');
+    };
+
+    const getStatusInfo = (type: boolean) => {
+        return type
+            ? { label: 'MASUK', color: 'text-[#00d6b5] bg-[#00d6b5]/10 border-[#00d6b5]/20' }
+            : { label: 'KELUAR', color: 'text-red-500 bg-red-500/10 border-red-500/20' };
     };
 
     return (
@@ -71,7 +46,7 @@ export default function TopUpHistoryPage() {
                         <h1 className="text-lg font-bold">Riwayat Top-up SmashPay</h1>
                     </div>
                     <button
-                        onClick={() => navigate(-1)}
+                        onClick={() => navigate("/")}
                         className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-bold text-sm"
                     >
                         <ArrowLeft className="w-4 h-4" /> Kembali
@@ -88,9 +63,13 @@ export default function TopUpHistoryPage() {
                             <Wallet className="w-10 h-10 text-white" />
                         </div>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-background/80">Total Saldo Aktif</p>
-                        <h2 className="text-4xl font-black text-[#051111]">
-                            {formatCurrency(walletBalance)}
-                        </h2>
+                        {isLoading ? (
+                            <div className="h-10 w-48 bg-background/20 animate-pulse rounded-lg" />
+                        ) : (
+                            <h2 className="text-4xl font-black text-[#051111]">
+                                {formatCurrency(balance)}
+                            </h2>
+                        )}
                     </div>
                 </div>
 
@@ -114,60 +93,111 @@ export default function TopUpHistoryPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-800/30">
-                                {mockHistory.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        onClick={() => navigate(`/top-up/history/${item.id}`)}
-                                        className="group hover:bg-white/5 transition-colors cursor-pointer"
-                                    >
-                                        <td className="px-8 py-6">
-                                            <div className="text-sm font-bold text-gray-300">
-                                                {dayjs(item.date).format('D MMM YYYY, HH:mm')}
+                                {isLoading ? (
+                                    // Loading Skeletons
+                                    [...Array(5)].map((_, i) => (
+                                        <tr key={i} className="animate-pulse">
+                                            <td className="px-8 py-6">
+                                                <div className="h-4 w-32 bg-white/5 rounded" />
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="h-4 w-40 bg-white/5 rounded" />
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="h-6 w-24 bg-white/5 rounded" />
+                                            </td>
+                                            <td className="px-8 py-6 text-right flex justify-end">
+                                                <div className="h-5 w-16 bg-white/5 rounded-full" />
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (!logs || logs.length === 0) ? (
+                                    <tr>
+                                        <td colSpan={4} className="px-8 py-32 text-center">
+                                            <div className="flex flex-col items-center gap-6">
+                                                <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center text-gray-600 border border-white/5 relative group">
+                                                    <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <Wallet className="w-10 h-10 opacity-20 relative z-10" />
+                                                </div>
+                                                <div className="max-w-xs mx-auto">
+                                                    <p className="text-lg font-bold text-white mb-2">Belum Ada Transaksi</p>
+                                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">
+                                                        Sepertinya Anda belum melakukan transaksi top-up atau pembayaran menggunakan SmashPay.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => navigate('/top-up')}
+                                                    className="mt-2 bg-primary/10 text-primary border border-primary/20 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-background transition-all active:scale-95"
+                                                >
+                                                    Isi Saldo Sekarang
+                                                </button>
                                             </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="text-sm font-medium text-gray-400">
-                                                {item.method}
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="text-lg font-black text-white tracking-tight">
-                                                {formatCurrency(item.amount)}
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <span className={cn(
-                                                "text-[9px] font-black px-3 py-1.5 rounded-full border uppercase tracking-[0.1em]",
-                                                item.statusColor
-                                            )}>
-                                                {item.status}
-                                            </span>
                                         </td>
                                     </tr>
-                                ))}
+                                ) : (
+                                    logs?.map((item: any) => {
+                                        const status = getStatusInfo(item.usageType);
+                                        return (
+                                            <tr
+                                                key={item.id}
+                                                onClick={() => item.refID && navigate(`/top-up/history/${item.refID}`)}
+                                                className="group hover:bg-white/5 transition-colors cursor-pointer"
+                                            >
+                                                <td className="px-8 py-6">
+                                                    <div className="text-sm font-bold text-gray-300">
+                                                        {dayjs(item.createdAt).format('D MMM YYYY, HH:mm')}
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <div className="text-sm font-medium text-gray-400">
+                                                        {item.usageType ? 'Top-up SmashPay' : 'Pembayaran Booking'}
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <div className={cn(
+                                                        "text-lg font-black tracking-tight",
+                                                        item.usageType ? "text-primary" : "text-red-400"
+                                                    )}>
+                                                        {item.usageType ? '+' : '-'}{formatCurrency(item.usageValue)}
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-6 text-right">
+                                                    <span className={cn(
+                                                        "text-[9px] font-black px-3 py-1.5 rounded-full border uppercase tracking-[0.1em]",
+                                                        status.color
+                                                    )}>
+                                                        {status.label}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-center gap-2 mt-10">
-                    <button className="p-3 bg-card border border-gray-800 rounded-xl text-gray-500 hover:text-white transition-all">
-                        <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <button className="w-12 h-12 bg-primary text-background rounded-xl font-black shadow-lg shadow-primary/20">
-                        1
-                    </button>
-                    <button className="w-12 h-12 bg-card border border-gray-800 rounded-xl font-black text-gray-400 hover:text-white transition-all">
-                        2
-                    </button>
-                    <button className="w-12 h-12 bg-card border border-gray-800 rounded-xl font-black text-gray-400 hover:text-white transition-all">
-                        3
-                    </button>
-                    <button className="p-3 bg-card border border-gray-800 rounded-xl text-gray-500 hover:text-white transition-all">
-                        <ChevronRight className="w-5 h-5" />
-                    </button>
-                </div>
+                {(logs && logs.length > 0) && (
+                    <div className="flex items-center justify-center gap-2 mt-10">
+                        <button className="p-3 bg-card border border-gray-800 rounded-xl text-gray-500 hover:text-white transition-all">
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <button className="w-12 h-12 bg-primary text-background rounded-xl font-black shadow-lg shadow-primary/20">
+                            1
+                        </button>
+                        <button className="w-12 h-12 bg-card border border-gray-800 rounded-xl font-black text-gray-400 hover:text-white transition-all">
+                            2
+                        </button>
+                        <button className="w-12 h-12 bg-card border border-gray-800 rounded-xl font-black text-gray-400 hover:text-white transition-all">
+                            3
+                        </button>
+                        <button className="p-3 bg-card border border-gray-800 rounded-xl text-gray-500 hover:text-white transition-all">
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                )}
                 {/* Action Footer */}
                 <div className="mt-12 flex justify-center">
                     <button

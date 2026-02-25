@@ -4,9 +4,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { useMutation } from '@tanstack/react-query';
 import { authService } from '../../features/auth/auth.service';
+import { useWalletStore } from '../../features/wallet/wallet.store';
 
 export default function ProfileDrawer() {
-    const { user, isProfileOpen, toggleProfile, logout, walletBalance, refreshToken } = useAuthStore();
+    const { user, isProfileOpen, toggleProfile, logout, refreshToken } = useAuthStore();
+    const { balance } = useWalletStore();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -150,7 +152,7 @@ export default function ProfileDrawer() {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-2xl font-black text-white tracking-tight">
-                                        {formatCurrency(walletBalance || 0)}
+                                        {formatCurrency(balance || 0)}
                                     </span>
                                     <span className="text-[10px] text-gray-500 font-medium mt-1 uppercase tracking-widest">
                                         Saldo dari Pengembalian Dana

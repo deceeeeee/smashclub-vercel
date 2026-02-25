@@ -7,9 +7,11 @@ import ProfileDrawer from "../../pages/auth/ProfileDrawer"
 import { useAuthStore } from "../../features/auth/auth.store"
 import { useQuery } from "@tanstack/react-query"
 import { authService } from "../../features/auth/auth.service"
+import { useWalletStore } from "../../features/wallet/wallet.store"
 
 export default function MainLayout() {
-    const { token, updateUser, logout, fetchWalletBalance } = useAuthStore()
+    const { token, updateUser, logout } = useAuthStore();
+    const { fetchBalance } = useWalletStore();
 
     // Sync session on app initialization
     const { data: sessionData, isError, error } = useQuery({
@@ -22,9 +24,9 @@ export default function MainLayout() {
 
     useEffect(() => {
         if (token) {
-            fetchWalletBalance()
+            fetchBalance()
         }
-    }, [token, fetchWalletBalance])
+    }, [token, fetchBalance])
 
     useEffect(() => {
         if (sessionData?.success && sessionData.data) {

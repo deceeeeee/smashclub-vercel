@@ -5,19 +5,38 @@ export interface Transaction {
     transactionCode: string;
     transactionLabel: string;
     totalPrice: number;
-    paymentLink: string;
+    paymentLink?: string;
     status: number;
+    statusDesc?: string;
     isRefunded: number;
-    referenceCode: string;
+    referenceCode?: string;
     notes: string;
     transactionType: number;
-    paymentMethodID: number;
+    transactionTypeDesc?: string;
+    paymentMethodID?: number;
     createdAt: string;
     updatedAt: string;
+    user: {
+        id: string;
+        fullName: string;
+        email: string;
+    };
+}
+
+export interface PaginatedResponse<T> {
+    content: T[];
+    empty: boolean;
+    first: boolean;
+    last: boolean;
+    number: number;
+    numberOfElements: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
 }
 
 export interface TransactionResponse<T> {
-    path: string;
+    path?: string;
     data: T;
     success: boolean;
     message: string;
@@ -43,7 +62,7 @@ export const transactionService = {
         endDate: string;
         page?: number;
         size?: number;
-    }): Promise<TransactionResponse<Transaction[]>> => {
+    }): Promise<TransactionResponse<PaginatedResponse<Transaction>>> => {
         const response = await api.get('/transaction', { params });
         return response.data;
     },
@@ -53,8 +72,10 @@ export const transactionService = {
         return response.data;
     },
 
-    cancelTransactionByReference: async (referenceCode: string): Promise<TransactionResponse<CancelTransactionResponse>> => {
-        const response = await api.post(`/transaction/cancel-by-reference/${referenceCode}`);
+    cancelTransactionByReference: async (referenceCode: string, refundReason: string): Promise<TransactionResponse<CancelTransactionResponse>> => {
+        const response = await api.post(`/transaction/cancel-by-reference/${referenceCode}`, {
+            refundReason
+        });
         return response.data;
     },
 };

@@ -2,24 +2,32 @@ import { useQuery } from "@tanstack/react-query"
 import { transactionService, type Transaction } from "../../features/booking/transaction.service"
 import dayjs from 'dayjs'
 import { Link } from "react-router-dom"
-import { Search, Loader2, CreditCard, ChevronRight, ArrowLeft, Filter, Zap } from "lucide-react"
+import { Search, Loader2, CreditCard, ChevronRight, ChevronLeft, ArrowLeft, Filter, Zap } from "lucide-react"
 import { cn } from "../../lib/utils"
+import { useState } from "react"
 
 export default function TransactionListPage() {
+    const [page, setPage] = useState(0);
+    const size = 10;
+
     const { data: transactionsResponse, isLoading } = useQuery({
-        queryKey: ['transaction-list'],
+        queryKey: ['transaction-list', page, size],
         queryFn: () => transactionService.getTransactionList({
-            startDate: dayjs().subtract(1, 'month').format('YYYY-MM-DD'),
+            startDate: dayjs().subtract(3, 'month').format('YYYY-MM-DD'),
             endDate: dayjs().add(1, 'day').format('YYYY-MM-DD'),
-            page: 0,
-            size: 50
+            page,
+            size
         })
     });
 
-    const transactions = transactionsResponse?.data || [];
+    const paginatedData = transactionsResponse?.data;
+    const transactions = paginatedData?.content || [];
+    const totalPages = paginatedData?.totalPages || 0;
+    const totalElements = paginatedData?.totalElements || 0;
 
     const getStatusInfo = (status: number) => {
         switch (status) {
+            case 0:
             case 1: return { label: 'PENDING', color: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' };
             case 2: return { label: 'SETTLED', color: 'bg-green-500/10 border-green-500/30 text-green-400' };
             case 3: return { label: 'EXPIRED', color: 'bg-red-500/10 border-red-500/30 text-red-400' };
@@ -103,17 +111,22 @@ export default function TransactionListPage() {
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            {transaction.paymentLink && transaction.status === 1 && (
+                                            {transaction.paymentLink && (transaction.status === 0 || transaction.status === 1) && (
                                                 <a
                                                     href={transaction.paymentLink}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
                                                     className="bg-primary text-[#051111] px-4 py-2 rounded-lg text-xs font-black hover:bg-primary/90 transition-all"
                                                 >
                                                     Bayar
                                                 </a>
                                             )}
-                                            <button className="p-2 hover:bg-white/5 rounded-lg text-gray-400 transition-all">
+                                            <Link
+                                                to={transaction.transactionType === 1 ? `/orders/${transaction.transactionCode}` : `/top-up/history/${transaction.transactionCode}`}
+                                                className="p-2 hover:bg-white/5 rounded-lg text-gray-400 transition-all"
+                                            >
                                                 <ChevronRight className="w-5 h-5" />
-                                            </button>
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
@@ -132,6 +145,47 @@ export default function TransactionListPage() {
                     </div>
                 )}
             </div>
+
+            {/* Pagination */}
+            {transactions.length > 0 && totalPages > 1 && (
+                <div className="mt-12 flex flex-col md:flex-row justify-between items-center gap-6 bg-[#16282a] border border-gray-800 rounded-2xl p-6">
+                    <p className="text-xs text-gray-500 font-bold tracking-tight">
+                        Menampilkan <span className="text-gray-300">{(page * size) + 1} - {Math.min((page + 1) * size, totalElements)}</span> dari <span className="text-gray-300">{totalElements}</span> transaksi
+                    </p>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-400 border border-white/5 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-all font-black"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+
+                        {[...Array(totalPages)].map((_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => setPage(i)}
+                                className={cn(
+                                    "w-10 h-10 flex items-center justify-center rounded-xl text-xs font-black border transition-all",
+                                    page === i
+                                        ? "bg-primary text-[#051111] border-primary shadow-[0_0_15px_rgba(34,197,94,0.2)]"
+                                        : "bg-white/5 text-gray-400 border-white/5 hover:text-white hover:bg-white/10"
+                                )}
+                            >
+                                {i + 1}
+                            </button>
+                        ))}
+
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                            disabled={page === totalPages - 1}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-gray-400 border border-white/5 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 transition-all font-black"
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

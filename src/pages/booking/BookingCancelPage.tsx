@@ -26,26 +26,13 @@ export default function BookingCancelPage() {
     });
 
     const booking = bookingResponse?.data;
-    const bookingCodeValue = booking?.bookingCode || bookingCode;
-
-    // Fetch transaction detail to get referenceCode
-    const { data: transactionResponse } = useQuery({
-        queryKey: ['transaction-detail', bookingCodeValue],
-        queryFn: () => transactionService.getTransactionDetail(bookingCodeValue!),
-        enabled: !!bookingCodeValue
-    });
-
-    const transaction = transactionResponse?.data;
 
     const cancelMutation = useMutation({
         mutationFn: async (reason: string) => {
-            // First update the booking status (and reason)
-            await bookingService.updateBookingStatus(bookingCode!, 0, reason);
-
             // If there's a reference code (from booking or transaction detail), cancel the transaction
-            const referenceCode = booking?.respCreateTransactionDTO?.referenceCode || transaction?.referenceCode;
+            const referenceCode = bookingCode!;
             if (referenceCode) {
-                await transactionService.cancelTransactionByReference(referenceCode);
+                await transactionService.cancelTransactionByReference(referenceCode, reason);
             }
         },
         onSuccess: () => {
@@ -133,12 +120,12 @@ export default function BookingCancelPage() {
 
                         <div className="flex gap-6 group">
                             <div className="w-24 h-24 rounded-2xl bg-gray-900 border border-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center p-3">
-                                <img src={booking.courtImgLink || "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop"} alt={booking.courtName} className="w-full h-full object-cover rounded-lg" />
+                                <img src={booking.court.courtImgLink || "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop"} alt={booking.court.courtName} className="w-full h-full object-cover rounded-lg" />
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
                                 <p className="text-[10px] font-bold text-primary mb-1 uppercase tracking-wider">ID Pesanan: #{booking.bookingCode}</p>
                                 <div className="flex justify-between items-start">
-                                    <h3 className="text-xl font-bold">{booking.courtName}</h3>
+                                    <h3 className="text-xl font-bold">{booking.court.courtName}</h3>
                                     <span className="text-xl font-bold text-primary">{formatPrice(booking.totalPrice)}</span>
                                 </div>
                                 <div className="text-sm text-gray-500 font-medium">

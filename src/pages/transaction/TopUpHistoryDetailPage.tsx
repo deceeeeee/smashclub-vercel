@@ -69,7 +69,7 @@ export default function TopUpHistoryDetailPage() {
             <header className="bg-background/95 backdrop-blur sticky top-0 z-50">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-800 rounded-full transition-colors text-primary">
+                        <button onClick={() => navigate("/top-up/history")} className="p-2 hover:bg-gray-800 rounded-full transition-colors text-primary">
                             <ArrowLeft className="w-6 h-6" />
                         </button>
                         <h1 className="text-lg font-bold">Detail Riwayat Top-up</h1>
