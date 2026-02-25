@@ -2,8 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
     Wallet,
-    ChevronLeft,
-    ChevronRight,
     Filter,
     Home
 } from 'lucide-react';
