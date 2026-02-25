@@ -77,6 +77,7 @@ export default function ShopCheckoutPage() {
                 id: finalOrderId,
                 orderCode: orderCodeFromState,
                 items: checkoutItems,
+                orderItemImgLink: checkoutItems[0]?.image || checkoutItems[0]?.variantImgLink || '',
                 subtotal,
                 shipping,
                 insurance,
@@ -89,7 +90,12 @@ export default function ShopCheckoutPage() {
                     year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
-                }) + ' WIB'
+                }) + ' WIB',
+                rawDate: new Date().toISOString(),
+                refundStatus: 0,
+                refundRequestDate: null,
+                refundStatusUpdateDate: null,
+                updatedAt: null
             });
 
             // Navigate to the order detail page
