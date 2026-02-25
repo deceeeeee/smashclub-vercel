@@ -36,6 +36,22 @@ export default function TransactionListPage() {
         }
     };
 
+    const generateDetailPath = (transactionType: number, transactionCode: string, referenceCode: string) => {
+        if (transactionType === 1) {
+            return `/orders/${referenceCode}`;
+        }
+
+        if (transactionType === 2) {
+            return `/shop/orders/${referenceCode}`;
+        }
+
+        if (transactionType === 3) {
+            return `/top-up/history/${transactionCode}`;
+        }
+
+        return `#`;
+    }
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -122,7 +138,7 @@ export default function TransactionListPage() {
                                                 </a>
                                             )}
                                             <Link
-                                                to={transaction.transactionType === 1 ? `/orders/${transaction.transactionCode}` : `/top-up/history/${transaction.transactionCode}`}
+                                                to={generateDetailPath(transaction.transactionType, transaction.transactionCode, transaction.referenceCode || '')}
                                                 className="p-2 hover:bg-white/5 rounded-lg text-gray-400 transition-all"
                                             >
                                                 <ChevronRight className="w-5 h-5" />
