@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { bookingService } from "../../features/booking/booking.service"
 import dayjs from 'dayjs'
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom"
-import { Calendar, Clock, CheckCircle, ExternalLink, User, MapPin, ArrowLeft, XCircle, Loader2, CreditCard } from "lucide-react"
+import { Calendar, Clock, ExternalLink, User, MapPin, ArrowLeft, XCircle, Loader2, CreditCard } from "lucide-react"
 import { useBookingStore } from "../../features/booking/booking.store"
 import { cn } from "../../lib/utils";
 

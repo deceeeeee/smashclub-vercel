@@ -19,7 +19,6 @@ export default function CheckoutPage() {
     const {
         selectedDate,
         selectedSlots,
-        selectedCoach,
         selectedEquipments,
         addBookingToHistory,
         resetBooking,

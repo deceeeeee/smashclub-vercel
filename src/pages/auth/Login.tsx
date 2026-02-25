@@ -7,7 +7,7 @@ import { cn } from "../../lib/utils"
 import { useAuthStore } from "../../features/auth/auth.store"
 import { useMutation } from "@tanstack/react-query"
 import { authService } from "../../features/auth/auth.service"
-import type { LoginRequest } from "../../features/auth/auth.service"
+import type { LoginRequest } from "../../features/auth/auth.types"
 import { Eye, EyeOff, Lock, Mail, ArrowRight, Loader2, AlertCircle } from "lucide-react"
 
 const loginSchema = z.object({
