@@ -37,11 +37,11 @@ export default function CheckoutPage() {
     const summaryData = bookingResponse?.data;
 
     // Prices from API if available, otherwise fallback to local calculation
-    const courtPrice = summaryData?.basePrice || (selectedSlotsCount * 150000);
-    const coachPrice = summaryData?.coaches?.reduce((sum, c) => sum + (c.coachPrice || 0), 0) || (selectedCoach ? (selectedCoach.price * selectedSlotsCount) : 0);
-    const equipmentPrice = summaryData?.equipment?.reduce((sum, e) => sum + (e.equipmentPrice || 0), 0) || selectedEquipments.reduce((sum: number, e: any) => sum + (e.price * e.quantity), 0);
+    const courtPrice = summaryData?.basePrice || 0;
+    const coachPrice = summaryData?.coaches?.reduce((sum, c) => sum + (c.coachPrice || 0), 0) || 0;
+    const equipmentPrice = summaryData?.equipment?.reduce((sum, e) => sum + (e.equipmentPrice || 0), 0) || 0;
     const serviceFee = 0; // Service fee removed as per user request
-    const totalPrice = summaryData?.totalPrice || (courtPrice + coachPrice + equipmentPrice + serviceFee);
+    const totalPrice = summaryData?.totalPrice || 0;
 
     const timeRange = selectedSlots.length > 0
         ? `${selectedSlots[0]} - ${`${parseInt(selectedSlots[selectedSlots.length - 1].split(':')[0]) + 1}:00`}`
