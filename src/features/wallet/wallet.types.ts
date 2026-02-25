@@ -29,7 +29,7 @@ export interface WalletLog {
 }
 
 export interface WalletBalanceData {
-    walletLogs: WalletLog[];
+    walletLog: WalletLog[];
     userBalance: number;
 }
 

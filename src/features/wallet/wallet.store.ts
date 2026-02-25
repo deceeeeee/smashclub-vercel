@@ -2,10 +2,11 @@ import { create } from "zustand"
 import { walletService } from "./wallet.service"
 import { persist, createJSONStorage } from "zustand/middleware"
 import { encrypt, decrypt } from "../../lib/encryption"
+import type { WalletLog } from "./wallet.types"
 
 interface WalletState {
     balance: number
-    logs: any[]
+    logs: WalletLog[]
     isLoading: boolean
     fetchBalance: () => Promise<void>
     setBalance: (amount: number) => void
@@ -43,7 +44,7 @@ export const useWalletStore = create<WalletState>()(
                     if (response.success && response.data) {
                         set({
                             balance: response.data.userBalance || 0,
-                            logs: Array.isArray(response.data.walletLogs) ? response.data.walletLogs : []
+                            logs: Array.isArray(response.data.walletLog) ? response.data.walletLog : []
                         });
                     }
                 } catch (error) {
