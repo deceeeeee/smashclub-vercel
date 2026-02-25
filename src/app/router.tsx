@@ -8,7 +8,6 @@ import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage"
 import BookingPage from "../pages/booking/BookingPage"
 import BookingSchedulePage from "../pages/booking/BookingSchedulePage"
 import CheckoutPage from "../pages/booking/CheckoutPage"
-
 import BookingCancelPage from "../pages/booking/BookingCancelPage"
 import StorePage from "../pages/shop/StorePage"
 import ProductDetailPage from "../pages/shop/ProductDetailPage"
