@@ -117,7 +117,7 @@ export interface WalletLog {
 
 export interface WalletBalanceResponse {
     data?: {
-        walletLogs: WalletLog[]
+        walletLog: WalletLog[]
         userBalance: number
     }
     success: boolean

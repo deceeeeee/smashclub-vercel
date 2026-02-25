@@ -2,8 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
     Wallet,
-    ChevronLeft,
-    ChevronRight,
     Filter,
     Home
 } from 'lucide-react';
@@ -11,6 +9,7 @@ import { useWalletStore } from '../../features/wallet/wallet.store';
 import { cn } from '../../lib/utils';
 import dayjs from 'dayjs';
 import { useEffect } from 'react';
+import type { WalletLog } from '../../features/wallet/wallet.types';
 
 export default function TopUpHistoryPage() {
     const navigate = useNavigate();
@@ -135,7 +134,7 @@ export default function TopUpHistoryPage() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    logs?.map((item: any) => {
+                                    logs?.map((item: WalletLog) => {
                                         const status = getStatusInfo(item.usageType);
                                         return (
                                             <tr
@@ -178,26 +177,6 @@ export default function TopUpHistoryPage() {
                     </div>
                 </div>
 
-                {/* Pagination */}
-                {(logs && logs.length > 0) && (
-                    <div className="flex items-center justify-center gap-2 mt-10">
-                        <button className="p-3 bg-card border border-gray-800 rounded-xl text-gray-500 hover:text-white transition-all">
-                            <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <button className="w-12 h-12 bg-primary text-background rounded-xl font-black shadow-lg shadow-primary/20">
-                            1
-                        </button>
-                        <button className="w-12 h-12 bg-card border border-gray-800 rounded-xl font-black text-gray-400 hover:text-white transition-all">
-                            2
-                        </button>
-                        <button className="w-12 h-12 bg-card border border-gray-800 rounded-xl font-black text-gray-400 hover:text-white transition-all">
-                            3
-                        </button>
-                        <button className="p-3 bg-card border border-gray-800 rounded-xl text-gray-500 hover:text-white transition-all">
-                            <ChevronRight className="w-5 h-5" />
-                        </button>
-                    </div>
-                )}
                 {/* Action Footer */}
                 <div className="mt-12 flex justify-center">
                     <button

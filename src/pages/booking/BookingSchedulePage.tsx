@@ -177,13 +177,43 @@ export default function BookingSchedulePage() {
         const slot = slots.find(s => s.time === time);
         if (!slot || slot.status === 'booked') return;
 
-        let newSelectedSlots;
-        if (selectedSlots.includes(time)) {
-            newSelectedSlots = selectedSlots.filter(s => s !== time);
+        let newSelectedSlots: string[];
+        const isSelected = selectedSlots.includes(time);
+
+        if (isSelected) {
+            const selectedSlotIndex = selectedSlots.findIndex(s => s === time);
+            if (selectedSlotIndex > 0) {
+                newSelectedSlots = [...selectedSlots.slice(0, selectedSlotIndex + 1)];
+            } else {
+                newSelectedSlots = [...selectedSlots.slice(selectedSlots.length - 1)];
+            }
         } else {
-            newSelectedSlots = [...selectedSlots, time].sort();
+            if (selectedSlots.length > 0) {
+                const allPotential = [...selectedSlots, time].sort();
+                const min = allPotential[0];
+                const max = allPotential[allPotential.length - 1];
+
+                // Find all available slots between min and max
+                const rangeToSelect = slots
+                    .filter(s => s.time >= min && s.time <= max)
+                    .map(s => s.time);
+
+                // Check if there's any booked slot in that range
+                const hasBookedInRange = slots.some(
+                    s => s.time >= min && s.time <= max && s.status === 'booked'
+                );
+
+                if (hasBookedInRange) {
+                    // Cannot select across a booked slot, reset selection to just the new one
+                    newSelectedSlots = [time];
+                } else {
+                    newSelectedSlots = rangeToSelect;
+                }
+            } else {
+                newSelectedSlots = [time];
+            }
         }
-        setSelectedSlots(newSelectedSlots);
+        setSelectedSlots(newSelectedSlots.sort());
     };
 
     const handleAddCoach = () => {
@@ -206,13 +236,14 @@ export default function BookingSchedulePage() {
     };
 
     const selectedSlotsCount = selectedSlots.length;
+    console.log(selectedSlotsCount);
 
     // Pre-booking summary query
     const bookingSummaryParams = {
         courtId: parseInt(courtId || "0"),
         bookingDate: selectedDate,
         startTime: selectedSlots.length > 0 ? `${selectedSlots[0]}:00` : '',
-        endTime: selectedSlots.length > 0 ? `${(parseInt(selectedSlots[selectedSlots.length - 1].split(':')[0]) + 1).toString().padStart(2, '0')}:00:00` : '',
+        endTime: selectedSlots.length > 0 ? `${(parseInt(selectedSlots[selectedSlots.length - 1].split(':')[0]) + (selectedSlots.length > 1 ? 0 : 1)).toString().padStart(2, '0')}:00:00` : '',
         coaches: selectedCoach ? [{
             coachId: parseInt(selectedCoach.id),
             durationHours: selectedSlots.length
@@ -264,7 +295,7 @@ export default function BookingSchedulePage() {
     };
 
     const formattedTimeRange = selectedSlots.length > 0
-        ? `${selectedSlots[0]} - ${dayjs(`${selectedDate} ${selectedSlots[selectedSlots.length - 1]}`).add(1, 'hour').format('HH:00')}`
+        ? `${selectedSlots[0]} - ${dayjs(`${selectedDate} ${selectedSlots[selectedSlots.length - 1]}`).format('HH:00')}`
         : '-';
 
     return (
@@ -325,9 +356,20 @@ export default function BookingSchedulePage() {
                         {/* Time Slots */}
                         <section className="bg-card/20 border border-gray-800 rounded-2xl p-6">
                             <div className="flex items-center justify-between mb-8">
-                                <div className="flex items-center gap-2 text-white font-bold">
-                                    <Clock className="w-5 h-5 text-primary" />
-                                    <h2>Slot Waktu Tersedia</h2>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2 text-white font-bold">
+                                        <Clock className="w-5 h-5 text-primary" />
+                                        <h2>Slot Waktu Tersedia</h2>
+                                    </div>
+                                    {selectedSlots.length > 0 && (
+                                        <button
+                                            onClick={() => setSelectedSlots([])}
+                                            className="text-[10px] font-bold text-red-400 hover:text-red-300 transition-colors uppercase tracking-widest flex items-center gap-1.5"
+                                        >
+                                            <X className="w-3 h-3" />
+                                            Reset Pilihan
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-4 text-[10px] uppercase font-bold tracking-widest">
                                     <div className="flex items-center gap-1.5 text-gray-500">
