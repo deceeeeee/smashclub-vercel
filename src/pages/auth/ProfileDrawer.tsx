@@ -156,6 +156,26 @@ export default function ProfileDrawer() {
                                         Saldo dari Pengembalian Dana
                                     </span>
                                 </div>
+                                <div className="flex items-center justify-between mt-6 pt-4 border-t border-primary/10">
+                                    <button
+                                        onClick={() => {
+                                            toggleProfile(false);
+                                            navigate('/top-up');
+                                        }}
+                                        className="text-[10px] font-black uppercase tracking-widest bg-primary text-[#051111] px-4 py-2 rounded-lg hover:bg-primary/90 transition-all active:scale-95"
+                                    >
+                                        Isi Saldo
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            toggleProfile(false);
+                                            navigate('/top-up/history');
+                                        }}
+                                        className="text-[10px] font-black uppercase tracking-widest text-primary hover:text-white transition-colors"
+                                    >
+                                        Lihat Riwayat
+                                    </button>
+                                </div>
                             </div>
                         </div>
 

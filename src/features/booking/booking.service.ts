@@ -68,6 +68,7 @@ export interface BookingDetail {
             invoiceUrl: string;
         };
         transactionCode: string;
+        referenceCode: string;
     };
     court: Court;
     coaches: {
@@ -146,8 +147,16 @@ export const bookingService = {
         return response.data;
     },
 
-    getMyBookings: async (): Promise<BookingResponse<BookingDetail[]>> => {
-        const response = await api.get('/booking/my-bookings');
+    getMyBookings: async (page: number = 0, size: number = 10): Promise<BookingResponse<{
+        content: BookingDetail[];
+        totalPages: number;
+        totalElements: number;
+        number: number;
+        size: number;
+    }>> => {
+        const response = await api.get('/booking/my-bookings', {
+            params: { page, size }
+        });
         return response.data;
     },
 

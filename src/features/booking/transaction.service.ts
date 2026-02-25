@@ -25,6 +25,18 @@ export interface TransactionResponse<T> {
     timestamp: string;
 }
 
+export interface CancelTransactionResponse {
+    transactionCode: string;
+    requested: boolean;
+    totalPrice: number;
+    referenceCode: string;
+    user: {
+        userId: string;
+        email: string;
+        fullName: string;
+    };
+}
+
 export const transactionService = {
     getTransactionList: async (params: {
         startDate: string;
@@ -38,6 +50,11 @@ export const transactionService = {
 
     getTransactionDetail: async (bookingCode: string): Promise<TransactionResponse<Transaction>> => {
         const response = await api.get(`/transaction/${bookingCode}`);
+        return response.data;
+    },
+
+    cancelTransactionByReference: async (referenceCode: string): Promise<TransactionResponse<CancelTransactionResponse>> => {
+        const response = await api.post(`/transaction/cancel-by-reference/${referenceCode}`);
         return response.data;
     },
 };
