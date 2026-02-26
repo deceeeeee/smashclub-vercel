@@ -1,4 +1,4 @@
-import { ShoppingCart, X, Plus, Minus, ArrowRight, Loader2, Trash2 } from 'lucide-react';
+import { ShoppingCart, X, Plus, Minus, ArrowRight, Loader2, Trash2, AlertCircle } from 'lucide-react';
 import { useShopStore } from '../../features/shop/shop.store';
 import { useAuthStore } from '../../features/auth/auth.store';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +24,7 @@ export default function CartDrawer() {
     const { token } = useAuthStore();
     const navigate = useNavigate();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
 
     useEffect(() => {
         if (token) fetchCart();
@@ -53,29 +54,32 @@ export default function CartDrawer() {
         }
     };
 
-    const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
+    const handleUpdateQuantity = async (itemId: number, newQuantity: number) => {
         if (token) {
-            await updateQuantityAPI(parseInt(itemId), newQuantity);
+            await updateQuantityAPI(itemId, newQuantity);
         } else {
             updateQuantity(itemId, newQuantity);
         }
     };
 
-    const handleRemoveItem = async (itemId: string) => {
+    const handleRemoveItem = async (itemId: number) => {
         if (token) {
-            await removeFromCartAPI(parseInt(itemId));
+            await removeFromCartAPI(itemId);
         } else {
             removeFromCart(itemId);
         }
     };
 
-    const handleClearCart = async () => {
-        if (window.confirm("Apakah Anda yakin ingin mengosongkan keranjang?")) {
-            if (token) {
-                await clearCartAPI();
-            } else {
-                clearCart();
-            }
+    const handleClearCart = () => {
+        setShowClearConfirm(true);
+    };
+
+    const confirmClear = async () => {
+        setShowClearConfirm(false);
+        if (token) {
+            await clearCartAPI();
+        } else {
+            clearCart();
         }
     };
 
@@ -268,6 +272,45 @@ export default function CartDrawer() {
                     )}
                 </div>
             </div>
+            {/* Clear Cart Confirmation Modal */}
+            {showClearConfirm && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-black/90 backdrop-blur-md animate-in fade-in duration-300"
+                        onClick={() => setShowClearConfirm(false)}
+                    />
+                    <div className="relative bg-[#0a1a1a] border border-white/5 w-full max-w-sm rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-in zoom-in-95 duration-300">
+                        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-48 h-48 bg-red-500/10 rounded-full blur-[80px]"></div>
+
+                        <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-red-500/20">
+                            <AlertCircle className="w-10 h-10 text-red-500" />
+                        </div>
+
+                        <h3 className="text-2xl font-black text-white text-center mb-4 italic uppercase tracking-tighter">
+                            KOSONGKAN <span className="text-red-500">KERANJANG?</span>
+                        </h3>
+
+                        <p className="text-gray-400 text-center font-bold text-sm leading-relaxed mb-10">
+                            Semua item yang Anda pilih akan dihapus. Anda tidak dapat membatalkan tindakan ini.
+                        </p>
+
+                        <div className="flex flex-col gap-4">
+                            <button
+                                onClick={confirmClear}
+                                className="w-full bg-red-500 text-[#051111] py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-400 transition-all shadow-[0_10px_30px_rgba(239,68,68,0.2)] active:scale-95"
+                            >
+                                Ya, Kosongkan Sekarang
+                            </button>
+                            <button
+                                onClick={() => setShowClearConfirm(false)}
+                                className="w-full bg-white/5 text-gray-400 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all border border-white/5"
+                            >
+                                Batalkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom"
-import { Calendar, Package, ArrowLeft, Clock, MapPin, CheckCircle2, XCircle, ChevronRight, RotateCcw, Eye } from "lucide-react"
+import { Calendar, Package, ArrowLeft, Clock, MapPin, CheckCircle2, XCircle, ChevronRight, RotateCcw, Eye, ExternalLink } from "lucide-react"
 import { useShopStore } from "../../features/shop/shop.store"
 import { cn } from "../../lib/utils"
 import { useEffect } from "react"
@@ -141,9 +141,17 @@ export default function ShopOrderDetailPage() {
                                         {config.icon}
                                     </div>
                                     <h1 className="text-5xl font-black mb-4 uppercase italic tracking-tighter">{config.title}</h1>
-                                    <p className="text-gray-400 font-bold max-w-2xl mx-auto text-lg leading-relaxed">
+                                    <p className="text-gray-400 font-bold max-w-2xl mx-auto text-lg leading-relaxed mb-6">
                                         {config.desc}
                                     </p>
+                                    {status === 'MENUNGGU PEMBAYARAN' && currentOrder.paymentLink && (
+                                        <button
+                                            onClick={() => window.open(currentOrder.paymentLink!, '_blank')}
+                                            className="bg-yellow-500 text-[#051111] px-10 py-4 rounded-2xl text-base font-black hover:bg-yellow-400 transition-all shadow-[0_10px_30px_rgba(234,179,8,0.3)] flex items-center gap-3 mx-auto uppercase tracking-wider"
+                                        >
+                                            <ExternalLink className="w-5 h-5" /> Bayar Sekarang
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -328,6 +336,15 @@ export default function ShopOrderDetailPage() {
                                 <span className="text-3xl font-black text-primary">{formatPrice(currentOrder.total)}</span>
                             </div>
 
+                            {currentOrder.status === 'MENUNGGU PEMBAYARAN' && currentOrder.paymentLink && (
+                                <button
+                                    onClick={() => window.open(currentOrder.paymentLink!, '_blank')}
+                                    className="w-full bg-yellow-500 text-[#051111] py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-yellow-400 transition-all shadow-[0_4px_20px_rgba(234,179,8,0.2)] mb-4"
+                                >
+                                    <ExternalLink className="w-5 h-5" /> Bayar Sekarang (External)
+                                </button>
+                            )}
+
                             <Link to="/shop/orders" className="w-full bg-primary text-[#051111] py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-[0_4px_20px_rgba(0,214,181,0.2)] mb-8">
                                 <Package className="w-5 h-5" /> Lihat Riwayat Pesanan
                             </Link>
@@ -360,24 +377,28 @@ export default function ShopOrderDetailPage() {
                             {
                                 label: 'Pesanan Dibuat',
                                 desc: 'Menunggu konfirmasi pembayaran dari sistem perbankan. Harap selesaikan pembayaran sebelum batas waktu berakhir.',
+                                date: currentOrder.date,
                                 icon: <Clock className="w-5 h-5" />,
                                 iconSmall: <Clock className="w-4 h-4" />,
                             },
                             {
                                 label: 'Pembayaran Diterima',
                                 desc: 'Pembayaran telah dikonfirmasi. Pesanan sedang diproses dan disiapkan.',
+                                date: status === 'DIPROSES' ? currentOrder.updatedAt : (statusOrder.indexOf(status) > 1 ? currentOrder.updatedAt : null),
                                 icon: <CheckCircle2 className="w-5 h-5" />,
                                 iconSmall: <CheckCircle2 className="w-4 h-4" />,
                             },
                             {
                                 label: 'Pesanan Siap Diambil',
                                 desc: 'Pesanan Anda sudah siap untuk diambil di lokasi pengambilan.',
+                                date: status === 'SIAP DIAMBIL' ? currentOrder.updatedAt : (statusOrder.indexOf(status) > 2 ? currentOrder.updatedAt : null),
                                 icon: <MapPin className="w-5 h-5" />,
                                 iconSmall: <MapPin className="w-4 h-4" />,
                             },
                             {
                                 label: 'Pesanan Selesai',
                                 desc: 'Pesanan telah selesai. Terima kasih telah berbelanja di SmashClub!',
+                                date: status === 'SELESAI' ? currentOrder.updatedAt : null,
                                 icon: <Package className="w-5 h-5" />,
                                 iconSmall: <Package className="w-4 h-4" />,
                             },
@@ -392,7 +413,7 @@ export default function ShopOrderDetailPage() {
                                         </div>
                                         <div>
                                             <h4 className="text-xl font-bold mb-1 text-red-500">Pesanan Dibatalkan</h4>
-                                            <p className="text-xs text-gray-500 mb-3 font-bold">{currentOrder.date}</p>
+                                            <p className="text-xs text-gray-500 mb-3 font-bold">{currentOrder.updatedAt || currentOrder.date}</p>
                                             <p className="text-sm text-gray-400 leading-relaxed max-w-xl font-medium">Pesanan ini telah dibatalkan. Hubungi bantuan jika ini adalah kesalahan.</p>
                                         </div>
                                     </div>
@@ -437,7 +458,7 @@ export default function ShopOrderDetailPage() {
                                                 )}>{step.label}</h4>
                                                 {(isCompleted || isActive) && (
                                                     <>
-                                                        <p className="text-xs text-gray-500 mb-3 font-bold">{currentOrder.date}</p>
+                                                        <p className="text-xs text-gray-500 mb-3 font-bold">{step.date || currentOrder.date}</p>
                                                         <p className="text-sm text-gray-400 leading-relaxed max-w-xl font-medium">{step.desc}</p>
                                                     </>
                                                 )}

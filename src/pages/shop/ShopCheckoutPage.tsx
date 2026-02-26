@@ -54,17 +54,18 @@ export default function ShopCheckoutPage() {
         setIsProcessing(true)
         try {
             let orderId = orderIdFromState;
+            let response: any = null;
 
             // If it's a Buy Now and we don't have an orderId yet, create it now
             if (isBuyNow && !orderId && buyNowItem) {
-                const response = await buyNowAPI(buyNowItem.variantId, buyNowItem.quantity);
+                response = await buyNowAPI(buyNowItem.variantId, buyNowItem.quantity);
                 if (response && response.data?.orderId) {
                     orderId = response.data.orderId;
                 }
             }
             // If it's a regular cart checkout (not buy now) and no orderId, call checkoutCartAPI
             else if (!isBuyNow && !orderId && cart.length > 0) {
-                const response = await checkoutCartAPI();
+                response = await checkoutCartAPI();
                 if (response && response.data?.orderId) {
                     orderId = response.data.orderId;
                 }
@@ -72,6 +73,7 @@ export default function ShopCheckoutPage() {
 
             // Fallback to mock if API failed or no orderId
             const finalOrderId = (orderId || `SC-${Math.floor(100000 + Math.random() * 900000)}`).toString();
+            const paymentLink = response?.data?.paymentLink;
 
             addOrder({
                 id: finalOrderId,
@@ -95,8 +97,15 @@ export default function ShopCheckoutPage() {
                 refundStatus: 0,
                 refundRequestDate: null,
                 refundStatusUpdateDate: null,
+                paymentLink: paymentLink,
                 updatedAt: null
             });
+
+            // Handle automatic redirect/new tab for paymentLink
+            if (paymentLink) {
+                // Open in new tab
+                window.open(paymentLink, '_blank');
+            }
 
             // Navigate to the order detail page
             navigate(`/shop/order/${finalOrderId}`);

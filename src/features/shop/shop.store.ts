@@ -20,6 +20,7 @@ export interface ShopOrder {
     refundStatus: number;
     refundRequestDate: string | null;
     refundStatusUpdateDate: string | null;
+    paymentLink: string | null;
     updatedAt: string | null;
 }
 
@@ -39,13 +40,13 @@ interface ShopState {
     addToCartStartingQuantity: number;
     isAddToCartModalOpen: boolean;
     fetchProducts: () => Promise<void>;
-    fetchProductById: (id: string) => Promise<void>;
+    fetchProductById: (id: number | string) => Promise<void>;
     fetchCart: () => Promise<void>;
     addToCart: (product: Product, quantity?: number) => void;
     addToCartAPI: (variantId: number, quantity: number) => Promise<void>;
-    removeFromCart: (productId: string) => void;
+    removeFromCart: (CartItemId: number) => void;
     removeFromCartAPI: (cartItemId: number) => Promise<void>;
-    updateQuantity: (productId: string, quantity: number) => void;
+    updateQuantity: (cartItemId: number, quantity: number) => void;
     updateQuantityAPI: (cartItemId: number, quantity: number) => Promise<void>;
     clearCart: () => void;
     clearCartAPI: () => Promise<void>;
@@ -72,7 +73,7 @@ const mapAPICartItems = (items: any[]): CartItem[] => {
 
             // Item ID — backend may use id or cartItemId
             const rawId = apiItem.cartItemId ?? apiItem.id ?? apiItem.productId;
-            const id = rawId != null ? rawId.toString() : `item-${index}`;
+            const id = rawId != null ? Number(rawId) : index;
 
             // Variant data — prioritized from new docs structure
             const variant = apiItem.variant ?? apiItem.productVariant ?? null;
@@ -142,7 +143,7 @@ const mapAPIOrderToShopOrder = (apiOrder: any): ShopOrder => {
         const variantName = item.variantName || '';
 
         return {
-            id: (item.productId || item.id || item.variantId || Math.random()).toString(),
+            id: Number(item.productId || item.id || item.variantId || Math.floor(Math.random() * 1000000)),
             name: productName,
             category: item.category || item.product?.category || 'Kategori',
             price: item.price || item.priceAtAdd || 0,
@@ -158,6 +159,23 @@ const mapAPIOrderToShopOrder = (apiOrder: any): ShopOrder => {
 
     const orderDateRaw = apiOrder.orderDate || apiOrder.order_date || apiOrder.createdAt || apiOrder.created_at;
     const dateObj = orderDateRaw ? new Date(orderDateRaw) : new Date();
+
+    const formatDate = (dateStr: string | null) => {
+        if (!dateStr) return null;
+        try {
+            const dateObj = new Date(dateStr);
+            if (isNaN(dateObj.getTime())) return null;
+            return dateObj.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) + ' WIB';
+        } catch (e) {
+            return null;
+        }
+    };
 
     return {
         id: (apiOrder.orderId || apiOrder.id)?.toString() || '',
@@ -179,9 +197,10 @@ const mapAPIOrderToShopOrder = (apiOrder: any): ShopOrder => {
         }) + ' WIB',
         rawDate: dateObj.toISOString(),
         refundStatus: apiOrder.refundStatus ?? 0,
-        refundRequestDate: apiOrder.refundRequestDate ?? null,
-        refundStatusUpdateDate: apiOrder.refundStatusUpdateDate ?? null,
-        updatedAt: apiOrder.updatedAt ?? null
+        refundRequestDate: formatDate(apiOrder.refundRequestDate),
+        refundStatusUpdateDate: formatDate(apiOrder.refundStatusUpdateDate),
+        paymentLink: apiOrder.paymentLink ?? null,
+        updatedAt: formatDate(apiOrder.updatedAt)
     };
 };
 
@@ -208,7 +227,7 @@ export const useShopStore = create<ShopState>()(
                     const response = await shopService.getProducts();
                     if (response.success) {
                         const mappedProducts: Product[] = response.data.content.map((apiProduct: ProductAPI) => ({
-                            id: apiProduct.id.toString(),
+                            id: apiProduct.id,
                             name: apiProduct.productName,
                             category: apiProduct.category,
                             price: apiProduct.productVariants[0]?.price || 0,
@@ -224,14 +243,14 @@ export const useShopStore = create<ShopState>()(
                     set({ error: error.message || 'Failed to fetch products', isLoading: false });
                 }
             },
-            fetchProductById: async (id: string) => {
+            fetchProductById: async (id: number | string) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await shopService.getProductById(id);
                     if (response.success) {
                         const apiProduct = response.data;
                         const mappedProduct: Product = {
-                            id: apiProduct.id.toString(),
+                            id: apiProduct.id,
                             name: apiProduct.productName,
                             category: apiProduct.category,
                             price: apiProduct.productVariants[0]?.price || 0,
@@ -323,8 +342,8 @@ export const useShopStore = create<ShopState>()(
                 }
                 set({ isCartOpen: true });
             },
-            removeFromCart: (productId) => {
-                set({ cart: get().cart.filter((item) => item.id !== productId) });
+            removeFromCart: (cartItemId: number) => {
+                set({ cart: get().cart.filter((item) => item.id !== cartItemId) });
             },
             removeFromCartAPI: async (cartItemId: number) => {
                 set({ isLoading: true, error: null });
@@ -332,21 +351,21 @@ export const useShopStore = create<ShopState>()(
                     await shopService.removeCartItem(cartItemId);
                     // Update local state by removing the item
                     set((state) => ({
-                        cart: state.cart.filter(item => item.id !== cartItemId.toString()),
+                        cart: state.cart.filter(item => item.id !== cartItemId),
                         isLoading: false
                     }));
                 } catch (error: any) {
                     set({ error: error.message || 'Failed to remove item', isLoading: false });
                 }
             },
-            updateQuantity: (productId, quantity) => {
+            updateQuantity: (cartItemId, quantity) => {
                 if (quantity <= 0) {
-                    get().removeFromCart(productId);
+                    get().removeFromCart(cartItemId);
                     return;
                 }
                 set({
                     cart: get().cart.map((item) =>
-                        item.id === productId ? { ...item, quantity } : item
+                        item.id === cartItemId ? { ...item, quantity } : item
                     ),
                 });
             },
@@ -357,14 +376,20 @@ export const useShopStore = create<ShopState>()(
                 }
                 set({ isLoading: true, error: null });
                 try {
-                    await shopService.updateCartItem(cartItemId, quantity);
-                    // Update local state quantity
-                    set((state) => ({
-                        cart: state.cart.map(item =>
-                            item.id === cartItemId.toString() ? { ...item, quantity } : item
-                        ),
-                        isLoading: false
-                    }));
+                    const response = await shopService.updateCartItem(cartItemId, quantity);
+                    // Updated to use the returned cart data from API
+                    if (response && response.items) {
+                        const mappedItems = mapAPICartItems(response.items);
+                        set({ cart: mappedItems, isLoading: false });
+                    } else {
+                        // Fallback: manually update if items not returned
+                        set((state) => ({
+                            cart: state.cart.map(item =>
+                                item.id === cartItemId ? { ...item, quantity } : item
+                            ),
+                            isLoading: false
+                        }));
+                    }
                 } catch (error: any) {
                     set({ error: error.message || 'Failed to update quantity', isLoading: false });
                 }

@@ -18,7 +18,7 @@ export interface ProductAPI {
 }
 
 export interface Product {
-    id: string;
+    id: number;
     name: string;
     category: string;
     price: number;
@@ -116,6 +116,7 @@ export interface Order {
     created_at: string;
     transactionId: string;
     userId: string;
+    paymentLink?: string;
 }
 
 export interface OrderResponse {
@@ -142,6 +143,7 @@ export interface OrderSummary {
     status: number;
     subtotal: number;
     totalPrice: number;
+    paymentLink?: string;
 }
 
 export interface OrderSummaryResponse {
