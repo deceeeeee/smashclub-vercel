@@ -1,19 +1,27 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Product, CartItem, ProductAPI } from './shop.types';
+import type { Product, CartItem, ProductAPI, ProductVariant } from './shop.types';
 import { shopService } from './shop.service';
+import { useAuthStore } from '../auth/auth.store';
 
 export interface ShopOrder {
-    id: string;
+    id: number;
+    orderCode: string;
     items: CartItem[];
+    orderItemImgLink: string;
     subtotal: number;
     shipping: number;
     insurance: number;
     serviceFee: number;
     total: number;
-    status: 'MENUNGGU PEMBAYARAN' | 'DIPROSES' | 'SIAP DIAMBIL' | 'SELESAI' | 'DIBATALKAN';
-    paymentMethod: string;
+    status: 'DIBATALKAN' | 'MENUNGGU PEMBAYARAN' | 'DIPROSES' | 'SIAP DIAMBIL' | 'SELESAI';
     date: string;
+    rawDate: string;
+    refundStatus: number;
+    refundRequestDate: string | null;
+    refundStatusUpdateDate: string | null;
+    paymentLink: string | null;
+    updatedAt: string | null;
 }
 
 interface ShopState {
@@ -23,164 +31,203 @@ interface ShopState {
     orderHistory: ShopOrder[];
     isLoading: boolean;
     error: string | null;
+    buyNowProduct: Product | null;
+    buyNowStartingVariant: ProductVariant | null;
+    buyNowStartingQuantity: number;
+    isBuyNowModalOpen: boolean;
+    addToCartProduct: Product | null;
+    addToCartStartingVariant: ProductVariant | null;
+    addToCartStartingQuantity: number;
+    isAddToCartModalOpen: boolean;
     fetchProducts: () => Promise<void>;
-    fetchProductById: (id: string) => Promise<void>;
+    fetchProductById: (id: number | string) => Promise<void>;
     fetchCart: () => Promise<void>;
-    addToCart: (product: Product) => void;
-    addToCartAPI: (userId: string, variantId: number, quantity: number) => Promise<void>;
-    removeFromCart: (productId: string) => void;
-    updateQuantity: (productId: string, quantity: number) => void;
+    addToCart: (product: Product, quantity?: number) => void;
+    addToCartAPI: (variantId: number, quantity: number) => Promise<void>;
+    removeFromCart: (CartItemId: number) => void;
+    removeFromCartAPI: (cartItemId: number) => Promise<void>;
+    updateQuantity: (cartItemId: number, quantity: number) => void;
+    updateQuantityAPI: (cartItemId: number, quantity: number) => Promise<void>;
     clearCart: () => void;
+    clearCartAPI: () => Promise<void>;
     toggleCart: (open?: boolean) => void;
     addOrder: (order: ShopOrder) => void;
-    cancelOrder: (orderId: string) => void;
+    cancelOrder: (orderId: number) => void;
     getTotalItems: () => number;
     getSubtotal: () => number;
+    buyNowAPI: (variantId: number, quantity: number) => Promise<any>;
+    checkoutCartAPI: (data?: any) => Promise<any>;
+    getOrderHistoryAPI: (page?: number, pageSize?: number) => Promise<void>;
+    getOrderSummaryAPI: (orderId: number) => Promise<any>;
+    refundRequestAPI: (orderId: string, reason: string) => Promise<any>;
+    openBuyNowModal: (product: Product, variant?: ProductVariant, quantity?: number) => void;
+    closeBuyNowModal: () => void;
+    openAddToCartModal: (product: Product, variant?: ProductVariant, quantity?: number) => void;
+    closeAddToCartModal: () => void;
 }
 
-export const MOCK_PRODUCTS: Product[] = [
-    {
-        id: '1',
-        name: 'Pro Staff V14',
-        category: 'Raket',
-        price: 3500000,
-        image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop',
-        images: [
-            'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=2070&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1560012057-4372e14c5085?q=80&w=1974&auto=format&fit=crop',
-            'https://images.unsplash.com/photo-1617083281297-af33e89640bb?q=80&w=2070&auto=format&fit=crop'
-        ],
-        isHot: true,
-        description: 'Didesain untuk pemain yang mengutamakan kontrol dan presisi. Pro Staff V14 membawa warisan klasik dengan sentuhan modern.',
-        fullDescription: 'Didesain untuk pemain yang mengutamakan kontrol dan presisi. Pro Staff V14 membawa warisan klasik dengan sentuhan modern. Teknologi Braid 45 memberikan stabilitas yang luar biasa di setiap pukulan, memberikan rasa solid yang menjadi ciri khas seri legendaris ini.',
-        gripSizes: ['L2', 'L3', 'L4'],
-        specifications: {
-            'Weight (Unstrung)': '315 g / 11.1 oz',
-            'Balance': '31 cm / 10 pts HL',
-            'String Pattern': '16 x 19'
+const mapAPICartItems = (items: any[]): CartItem[] => {
+    return items
+        .map((apiItem: any, index: number) => {
+            if (!apiItem) return null;
+
+            // Item ID — backend may use id or cartItemId
+            const rawId = apiItem.cartItemId ?? apiItem.id ?? apiItem.productId;
+            const id = rawId != null ? Number(rawId) : index;
+
+            // Variant data — prioritized from new docs structure
+            const variant = apiItem.variant ?? apiItem.productVariant ?? null;
+            const variantName = variant?.variantName ?? apiItem.variantName ?? null;
+
+            // Product name extraction
+            const productName =
+                apiItem.productName ??
+                apiItem.product?.productName ??
+                variant?.product?.productName ??
+                "Produk";
+
+            const displayName = variantName && !productName.includes(variantName)
+                ? `${productName} - ${variantName}`
+                : productName;
+
+            // Price: prioritize variant price from the new structure
+            const price =
+                apiItem.priceAtAdd ??
+                variant?.price ??
+                apiItem.price ??
+                0;
+
+            // Image: prioritize variant image link
+            const image =
+                variant?.variantImgLink ??
+                apiItem.imgLink ??
+                apiItem.product?.defaultImgLink ??
+                variant?.product?.defaultImgLink ??
+                "";
+
+            // Category
+            const category =
+                apiItem.category ??
+                apiItem.product?.category ??
+                variant?.product?.category ??
+                "Kategori";
+
+            return {
+                id,
+                name: displayName,
+                category,
+                price,
+                image,
+                quantity: apiItem.quantity ?? 1,
+                variantName: variantName ?? '',
+                variantImgLink: variant?.variantImgLink ?? image ?? '',
+            } as CartItem;
+        })
+        .filter(Boolean) as CartItem[];
+};
+
+const mapAPIOrderToShopOrder = (apiOrder: any): ShopOrder => {
+    const statusMap: Record<number, ShopOrder['status']> = {
+        0: 'DIBATALKAN',
+        1: 'MENUNGGU PEMBAYARAN',
+        2: 'DIPROSES',
+        3: 'SIAP DIAMBIL',
+        4: 'SELESAI'
+    };
+
+    // Items mapping — order summary API has items[], order history API does not
+    const rawItems = apiOrder.items || apiOrder.orderItems || [];
+    const items: CartItem[] = rawItems.map((item: any) => {
+        const productName = item.productName || item.product?.productName || item.variantName || 'Produk';
+        const image = item.orderItemImgLink || item.image || item.imgLink || item.variantImgLink || item.product?.defaultImgLink || '';
+        const variantName = item.variantName || '';
+
+        return {
+            id: Number(item.productId || item.id || item.variantId || Math.floor(Math.random() * 1000000)),
+            name: productName,
+            category: item.category || item.product?.category || 'Kategori',
+            price: item.price || item.priceAtAdd || 0,
+            image: image,
+            quantity: item.quantity || 1,
+            variantName: variantName,
+            variantImgLink: item.variantImgLink || image
+        } as CartItem;
+    });
+
+    // Top-level image from order history API (flat structure, no items array)
+    const orderItemImgLink = apiOrder.orderItemImgLink || items[0]?.variantImgLink || items[0]?.image || '';
+
+    const orderDateRaw = apiOrder.orderDate || apiOrder.order_date || apiOrder.createdAt || apiOrder.created_at;
+    const dateObj = orderDateRaw ? new Date(orderDateRaw) : new Date();
+
+    const formatDate = (dateStr: string | null) => {
+        if (!dateStr) return null;
+        try {
+            const dateObj = new Date(dateStr);
+            if (isNaN(dateObj.getTime())) return null;
+            return dateObj.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }) + ' WIB';
+        } catch (e) {
+            return null;
         }
-    },
-    // {
-    //     id: '2',
-    //     name: 'Babolat Pure Aero',
-    //     category: 'Raket',
-    //     price: 3200000,
-    //     image: 'https://images.unsplash.com/photo-1617083281297-af33e89640bb?q=80&w=2070&auto=format&fit=crop',
-    //     gripSizes: ['L1', 'L2', 'L3'],
-    //     specifications: {
-    //         'Weight (Unstrung)': '300 g / 10.6 oz',
-    //         'Balance': '32 cm / 7 pts HL',
-    //         'String Pattern': '16 x 19'
-    //     }
-    // },
-    // {
-    //     id: '3',
-    //     name: 'Slazenger 4pc',
-    //     category: 'Bola',
-    //     price: 150000,
-    //     image: 'https://unsplash.com/photos/a-tennis-ball-on-a-table-hH_wY-p0X0k',
-    //     specifications: {
-    //         'Weight': '30 g',
-    //         'Diameter': '5.2 cm',
-    //         'Number of Balls': '4'
-    //     }
-    // },
-    {
-        id: '4',
-        name: 'Nike Court Air',
-        category: 'Sepatu',
-        price: 1800000,
-        image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=1925&auto=format&fit=crop',
-        sizes: ['39', '40', '41', '42', '43', '44'],
-        specifications: {
-            'Weight': '305 g / 10.8 oz',
-        }
-    },
-    {
-        id: '5',
-        name: 'Yonex VCORE 98',
-        category: 'Raket',
-        price: 3100000,
-        image: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?q=80&w=2070&auto=format&fit=crop',
-        gripSizes: ['L2', 'L3'],
-        specifications: {
-            'Weight (Unstrung)': '305 g / 10.8 oz',
-            'Balance': '31.5 cm / 9 pts HL',
-            'String Pattern': '16 x 19'
-        }
-    },
-    {
-        id: '6',
-        name: 'Head Gravity MP',
-        category: 'Raket',
-        price: 2900000,
-        image: 'https://images.unsplash.com/photo-1560012057-4372e14c5085?q=80&w=1974&auto=format&fit=crop',
-        isNew: true,
-        gripSizes: ['L2', 'L3'],
-        specifications: {
-            'Weight (Unstrung)': '295 g / 10.4 oz',
-            'Balance': '32.5 cm / 5 pts HL',
-            'String Pattern': '16 x 20'
-        }
-    },
-    {
-        id: '7',
-        name: 'Adidas Ergo Shorts',
-        category: 'Pakaian',
-        price: 450000,
-        image: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?q=80&w=2070&auto=format&fit=crop',
-        sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-    },
-    {
-        id: '9',
-        name: 'Yonex Astrox 88D Pro',
-        category: 'Raket',
-        price: 2500000,
-        image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop',
-        gripSizes: ['4U/G5'],
-        isHot: true,
-        description: 'Varian: 4U/G5 - Camel Gold'
-    },
-    {
-        id: '10',
-        name: 'Lining Saga II Professional',
-        category: 'Sepatu',
-        price: 1450000,
-        image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=1925&auto=format&fit=crop',
-        sizes: ['40', '41', '42', '43'],
-        description: 'Ukuran: 42 EU - Red/White'
-    },
-    // {
-    //     id: '8',
-    //     name: 'Wilson Roland Garros',
-    //     category: 'Bola',
-    //     price: 180000,
-    //     image: 'https://drive.google.com/file/d/1Pv5m8PSQHcF-RkgYCdqGWRxRlu_BST0R/view?usp=sharing',
-    //     specifications: {
-    //         'Weight': '30 g',
-    //         'Diameter': '5.5 cm',
-    //         'Number of Balls': '4'
-    //     }
-    // },
-];
+    };
+
+    return {
+        id: Number(apiOrder.orderId || apiOrder.id || 0),
+        items,
+        orderItemImgLink,
+        orderCode: apiOrder.orderCode || '',
+        subtotal: apiOrder.subtotal || apiOrder.totalPrice || apiOrder.total_price || 0,
+        shipping: apiOrder.shippingFee || 0,
+        insurance: apiOrder.insuranceFee || 0,
+        serviceFee: apiOrder.serviceFee || 0,
+        total: apiOrder.totalPrice || apiOrder.total_price || 0,
+        status: statusMap[apiOrder.status] || 'MENUNGGU PEMBAYARAN',
+        date: dateObj.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) + ' WIB',
+        rawDate: dateObj.toISOString(),
+        refundStatus: apiOrder.refundStatus ?? 0,
+        refundRequestDate: formatDate(apiOrder.refundRequestDate),
+        refundStatusUpdateDate: formatDate(apiOrder.refundStatusUpdateDate),
+        paymentLink: apiOrder.paymentLink ?? null,
+        updatedAt: formatDate(apiOrder.updatedAt)
+    };
+};
 
 export const useShopStore = create<ShopState>()(
     persist(
         (set, get) => ({
             cart: [],
             isCartOpen: false,
-            products: MOCK_PRODUCTS,
+            products: [],
             orderHistory: [],
             isLoading: false,
             error: null,
+            buyNowProduct: null,
+            buyNowStartingVariant: null,
+            buyNowStartingQuantity: 1,
+            isBuyNowModalOpen: false,
+            addToCartProduct: null,
+            addToCartStartingVariant: null,
+            addToCartStartingQuantity: 1,
+            isAddToCartModalOpen: false,
             fetchProducts: async () => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await shopService.getProducts();
                     if (response.success) {
                         const mappedProducts: Product[] = response.data.content.map((apiProduct: ProductAPI) => ({
-                            id: apiProduct.id.toString(),
+                            id: apiProduct.id,
                             name: apiProduct.productName,
                             category: apiProduct.category,
                             price: apiProduct.productVariants[0]?.price || 0,
@@ -196,14 +243,14 @@ export const useShopStore = create<ShopState>()(
                     set({ error: error.message || 'Failed to fetch products', isLoading: false });
                 }
             },
-            fetchProductById: async (id: string) => {
+            fetchProductById: async (id: number | string) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await shopService.getProductById(id);
                     if (response.success) {
                         const apiProduct = response.data;
                         const mappedProduct: Product = {
-                            id: apiProduct.id.toString(),
+                            id: apiProduct.id,
                             name: apiProduct.productName,
                             category: apiProduct.category,
                             price: apiProduct.productVariants[0]?.price || 0,
@@ -228,80 +275,260 @@ export const useShopStore = create<ShopState>()(
             fetchCart: async () => {
                 set({ isLoading: true, error: null });
                 try {
-                    const response = await shopService.getCart();
-                    if (response.success) {
-                        const mappedItems: CartItem[] = response.data.items.map((apiItem: any) => ({
-                            id: apiItem.id.toString(),
-                            name: apiItem.productName || apiItem.product?.productName || "Product",
-                            category: apiItem.category || apiItem.product?.category || "Category",
-                            price: apiItem.price || apiItem.productVariant?.price || 0,
-                            image: apiItem.imgLink || apiItem.productVariant?.variantImgLink || apiItem.product?.defaultImgLink || "",
-                            quantity: apiItem.quantity,
-                        }));
-                        set({ cart: mappedItems, isLoading: false });
+                    const response = await shopService.getCart() as any;
+                    const cartData = response?.data;
+                    const items: any[] = cartData?.items ?? response?.items ?? [];
+
+                    const isSuccess =
+                        response?.success === true ||
+                        response?.status === 200 ||
+                        (cartData?.cartId !== undefined);
+
+                    if (isSuccess) {
+                        const mappedItems = mapAPICartItems(items);
+                        set({ cart: mappedItems, isLoading: false, error: null });
+                    } else if (
+                        response?.status === 404 ||
+                        response?.message?.toLowerCase().includes('not found') ||
+                        response?.message?.toLowerCase().includes('no active cart')
+                    ) {
+                        set({ cart: [], isLoading: false, error: null });
                     } else {
-                        set({ error: response.message, isLoading: false });
+                        set({ error: response?.message || 'Gagal memuat keranjang', isLoading: false });
                     }
                 } catch (error: any) {
-                    set({ error: error.message || 'Failed to fetch cart', isLoading: false });
+                    if (error?.response?.status === 404) {
+                        set({ cart: [], isLoading: false, error: null });
+                    } else {
+                        set({ error: error.message || 'Terjadi kesalahan saat memuat keranjang', isLoading: false });
+                    }
                 }
             },
-            addToCartAPI: async (userId: string, variantId: number, quantity: number) => {
+            addToCartAPI: async (variantId: number, quantity: number) => {
                 set({ isLoading: true, error: null });
                 try {
-                    await shopService.addToCart({ userId, variantId, quantity });
-                    // After adding to cart, we should refresh the cart data
-                    await get().fetchCart();
-                    set({ isCartOpen: true, isLoading: false });
+                    const response = await shopService.addToCart({ variantId, quantity });
+                    // Backend returns the updated cart structure in AddToCartResponse
+                    if (response && response.items) {
+                        const mappedItems = mapAPICartItems(response.items);
+                        set({ cart: mappedItems, isLoading: false });
+                    } else {
+                        // Fallback: if items not returned, we might need to fetch
+                        await get().fetchCart();
+                    }
                 } catch (error: any) {
-                    set({ error: error.message || 'Failed to add item to cart', isLoading: false });
+                    set({ error: error.message || 'Gagal menambahkan ke keranjang', isLoading: false });
+                    throw error;
                 }
             },
-            addToCart: (product) => {
+            addToCart: (product, quantity = 1) => {
                 const cart = get().cart;
                 const existingItem = cart.find((item) => item.id === product.id);
                 if (existingItem) {
                     set({
                         cart: cart.map((item) =>
-                            item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+                            item.id === product.id ? { ...item, quantity: item.quantity + (quantity || 1) } : item
                         ),
                     });
                 } else {
-                    set({ cart: [...cart, { ...product, quantity: 1 }] });
+                    set({
+                        cart: [...cart, {
+                            ...product,
+                            quantity: quantity || 1,
+                            variantName: '',
+                            variantImgLink: product.image || ''
+                        }]
+                    });
                 }
                 set({ isCartOpen: true });
             },
-            removeFromCart: (productId) => {
-                set({ cart: get().cart.filter((item) => item.id !== productId) });
+            removeFromCart: (cartItemId: number) => {
+                set({ cart: get().cart.filter((item) => item.id !== cartItemId) });
             },
-            updateQuantity: (productId, quantity) => {
+            removeFromCartAPI: async (cartItemId: number) => {
+                set({ isLoading: true, error: null });
+                try {
+                    await shopService.removeCartItem(cartItemId);
+                    // Update local state by removing the item
+                    set((state) => ({
+                        cart: state.cart.filter(item => item.id !== cartItemId),
+                        isLoading: false
+                    }));
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to remove item', isLoading: false });
+                }
+            },
+            updateQuantity: (cartItemId, quantity) => {
                 if (quantity <= 0) {
-                    get().removeFromCart(productId);
+                    get().removeFromCart(cartItemId);
                     return;
                 }
                 set({
                     cart: get().cart.map((item) =>
-                        item.id === productId ? { ...item, quantity } : item
+                        item.id === cartItemId ? { ...item, quantity } : item
                     ),
                 });
             },
+            updateQuantityAPI: async (cartItemId: number, quantity: number) => {
+                if (quantity <= 0) {
+                    await get().removeFromCartAPI(cartItemId);
+                    return;
+                }
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.updateCartItem(cartItemId, quantity);
+                    // Updated to use the returned cart data from API
+                    if (response && response.items) {
+                        const mappedItems = mapAPICartItems(response.items);
+                        set({ cart: mappedItems, isLoading: false });
+                    } else {
+                        // Fallback: manually update if items not returned
+                        set((state) => ({
+                            cart: state.cart.map(item =>
+                                item.id === cartItemId ? { ...item, quantity } : item
+                            ),
+                            isLoading: false
+                        }));
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to update quantity', isLoading: false });
+                }
+            },
             clearCart: () => set({ cart: [] }),
+            clearCartAPI: async () => {
+                const token = useAuthStore.getState().token;
+                if (!token) {
+                    set({ cart: [] });
+                    return;
+                }
+
+                set({ isLoading: true, error: null });
+                try {
+                    await shopService.clearCart();
+                    set({ cart: [], isLoading: false });
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to clear cart', isLoading: false });
+                }
+            },
             toggleCart: (open) => set({ isCartOpen: open !== undefined ? open : !get().isCartOpen }),
             addOrder: (order) => set((state) => ({
                 orderHistory: [order, ...state.orderHistory],
                 cart: []
             })),
-            cancelOrder: (orderId) => set((state) => ({
+            cancelOrder: (orderId: number) => set((state) => ({
                 orderHistory: state.orderHistory.map(order =>
                     order.id === orderId ? { ...order, status: 'DIBATALKAN' } : order
                 )
             })),
             getTotalItems: () => get().cart.reduce((total, item) => total + item.quantity, 0),
             getSubtotal: () => get().cart.reduce((total, item) => total + item.price * item.quantity, 0),
+            buyNowAPI: async (variantId: number, quantity: number) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.buyNow({ variantId, quantity });
+                    if (response.message.includes('successfully') || response.data) {
+                        // Optionally clear cart or update order history
+                        // For now we just return the response
+                        set({ isLoading: false });
+                        return response;
+                    } else {
+                        set({ error: response.message, isLoading: false });
+                        return response;
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to buy product', isLoading: false });
+                    throw error;
+                }
+            },
+            checkoutCartAPI: async (data: any = {}) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.checkout(data);
+                    if (response.message.includes('successfully') || response.data) {
+                        set({ cart: [], isLoading: false });
+                        return response;
+                    } else {
+                        set({ error: response.message || 'Failed to checkout', isLoading: false });
+                        return response;
+                    }
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to checkout cart', isLoading: false });
+                    throw error;
+                }
+            },
+            getOrderHistoryAPI: async (page = 0, pageSize = 25) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.getOrderHistory(page, pageSize) as any;
+                    // Handle pagination or array return
+                    const items = response.data?.content || response.data || [];
+                    const apiOrders = Array.isArray(items) ? items : [items].filter(Boolean);
+
+                    const mappedOrders = apiOrders.map(mapAPIOrderToShopOrder);
+                    set({ orderHistory: mappedOrders, isLoading: false });
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to fetch order history', isLoading: false });
+                }
+            },
+            getOrderSummaryAPI: async (orderId: number) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.getOrderSummary(orderId);
+                    if (response && response.data) {
+                        const mappedOrder = mapAPIOrderToShopOrder(response.data);
+                        set((state) => ({
+                            orderHistory: state.orderHistory.some(o => o.id === mappedOrder.id)
+                                ? state.orderHistory.map(o => o.id === mappedOrder.id ? mappedOrder : o)
+                                : [mappedOrder, ...state.orderHistory],
+                            isLoading: false
+                        }));
+                    }
+                    set({ isLoading: false });
+                    return response;
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to fetch order summary', isLoading: false });
+                    throw error;
+                }
+            },
+            refundRequestAPI: async (orderCode: string, reason: string) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await shopService.requestRefund(orderCode, reason);
+                    set({ isLoading: false });
+                    return response;
+                } catch (error: any) {
+                    set({ error: error.message || 'Failed to submit refund request', isLoading: false });
+                    throw error;
+                }
+            },
+            openBuyNowModal: (product, variant, quantity) => set({
+                buyNowProduct: product,
+                buyNowStartingVariant: variant || (product.variants?.[0] || null),
+                buyNowStartingQuantity: quantity || 1,
+                isBuyNowModalOpen: true
+            }),
+            closeBuyNowModal: () => set({
+                buyNowProduct: null,
+                buyNowStartingVariant: null,
+                buyNowStartingQuantity: 1,
+                isBuyNowModalOpen: false
+            }),
+            openAddToCartModal: (product: Product, variant?: ProductVariant, quantity?: number) => set({
+                addToCartProduct: product,
+                addToCartStartingVariant: variant || (product.variants?.[0] || null),
+                addToCartStartingQuantity: quantity || 1,
+                isAddToCartModalOpen: true
+            }),
+            closeAddToCartModal: () => set({
+                addToCartProduct: null,
+                addToCartStartingVariant: null,
+                addToCartStartingQuantity: 1,
+                isAddToCartModalOpen: false
+            }),
         }),
         {
             name: 'smashclub-shop-storage',
-            partialize: (state) => ({
+            partialize: (state: ShopState) => ({
                 cart: state.cart,
                 orderHistory: state.orderHistory
             }),

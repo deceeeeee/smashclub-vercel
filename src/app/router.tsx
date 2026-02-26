@@ -27,6 +27,7 @@ import ChangeEmailPage from "../pages/auth/ChangeEmailPage"
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage"
 import ResendActivationPage from "../pages/auth/ResendActivationPage"
 import BookingHistoryDetailPage from "../pages/booking/BookingHistoryDetailPage"
+import CommunityPage from "../pages/CommunityPage"
 import NotFoundPage from "../pages/NotFoundPage"
 import TransactionListPage from "../pages/transaction/TransactionListPage"
 import TopUpPage from "../pages/transaction/TopUpPage"
@@ -64,7 +65,7 @@ const router = createBrowserRouter([
             { path: "shop/order/:id/refund", element: <ShopOrderRefundPage /> },
             { path: "shop/order/:id/refund-details", element: <ShopRefundDetailPage /> },
             { path: "shop/orders", element: <ShopOrderHistoryPage /> },
-            { path: "community", element: <div className="p-10 text-center">Komunitas (Coming Soon)</div> },
+            { path: "community", element: <CommunityPage /> },
         ]
     },
     {

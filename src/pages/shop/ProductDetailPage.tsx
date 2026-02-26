@@ -8,15 +8,15 @@ import type { ProductVariant } from '../../features/shop/shop.types';
 export default function ProductDetailPage() {
     const { productId } = useParams();
     const navigate = useNavigate();
-    const { products, addToCart, addToCartAPI, fetchProductById, isLoading, error } = useShopStore();
+    const { products, fetchProductById, openBuyNowModal, openAddToCartModal, isLoading, error } = useShopStore();
     const { token, user } = useAuthStore();
 
-    const product = products.find(p => p.id === productId);
+    const product = products.find(p => p.id === Number(productId));
 
     const [selectedImage, setSelectedImage] = useState('');
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
     const [quantity, setQuantity] = useState(1);
-    const [isAdding, setIsAdding] = useState(false);
+    const [actionError, setActionError] = useState<string | null>(null);
 
     useEffect(() => {
         if (productId) {
@@ -43,16 +43,18 @@ export default function ProductDetailPage() {
         }
     }, [selectedVariant]);
 
-    if (isLoading && !product) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center text-white bg-background">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-gray-400">Memuat detail produk...</p>
-            </div>
-        );
-    }
+    // Only show error screen if we failed to load the product itself
+    // Subsequent action errors (like add to cart) should show a toast or local message
+    if (!product) {
+        if (isLoading) {
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center text-white bg-background">
+                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+                    <p className="text-gray-400">Memuat detail produk...</p>
+                </div>
+            );
+        }
 
-    if (!product || error) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center text-white bg-background p-4 text-center">
                 <h2 className="text-2xl font-bold mb-4">{error || "Produk tidak ditemukan"}</h2>
@@ -74,39 +76,39 @@ export default function ProductDetailPage() {
         }).format(price).replace('Rp', 'Rp ');
     };
 
-    const handleAddToCart = async () => {
+    const handleAddToCart = () => {
+        setActionError(null);
+        if (!selectedVariant && product.variants && product.variants.length > 0) {
+            alert("Silakan pilih varian produk terlebih dahulu.");
+            return;
+        }
+
+        openAddToCartModal(product, selectedVariant || undefined, quantity);
+    };
+
+    const handleBuyNow = () => {
+        setActionError(null);
         if (!selectedVariant && product.variants && product.variants.length > 0) {
             alert("Silakan pilih varian produk terlebih dahulu.");
             return;
         }
 
         if (token && user) {
-            if (!selectedVariant) return; // Should not happen with check above
-            setIsAdding(true);
-            try {
-                await addToCartAPI(user.id.toString(), selectedVariant.id, quantity);
-            } finally {
-                setIsAdding(false);
+            let variantId: number | null = null;
+            if (selectedVariant) {
+                variantId = selectedVariant.id;
+            } else if (!isNaN(product.id)) {
+                variantId = product.id;
+            }
+
+            if (variantId !== null) {
+                openBuyNowModal(product, selectedVariant || undefined, quantity);
+            } else {
+                alert("Varian produk belum dipilih atau produk tidak valid.");
             }
         } else {
-            const productWithSelectedVariant = {
-                ...product,
-                price: selectedVariant ? selectedVariant.price : product.price,
-                image: selectedVariant ? selectedVariant.variantImgLink : product.image,
-                name: selectedVariant ? `${product.name} - ${selectedVariant.variantName}` : product.name,
-                id: selectedVariant ? `${product.id}-${selectedVariant.id}` : product.id
-            };
-
-            for (let i = 0; i < quantity; i++) {
-                addToCart(productWithSelectedVariant);
-            }
+            navigate('/login');
         }
-    };
-
-    const handleBuyNow = () => {
-        // Add one item (or the current quantity) and go straight to checkout
-        handleAddToCart();
-        navigate('/shop/checkout');
     };
 
     return (
@@ -217,6 +219,11 @@ export default function ProductDetailPage() {
                                         </button>
                                     </div>
                                 </div>
+                                {actionError && (
+                                    <p className="text-red-500 font-bold text-sm bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+                                        {actionError}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Actions */}
@@ -225,15 +232,10 @@ export default function ProductDetailPage() {
                                     <div className="flex flex-col sm:flex-row gap-4 pt-4">
                                         <button
                                             onClick={handleAddToCart}
-                                            disabled={isAdding}
-                                            className="flex-1 bg-primary text-background font-black py-4 px-8 rounded-xl flex items-center justify-center gap-3 hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="flex-1 bg-primary text-background font-black py-4 px-8 rounded-xl flex items-center justify-center gap-3 hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg shadow-primary/20"
                                         >
-                                            {isAdding ? (
-                                                <div className="w-5 h-5 border-2 border-background border-t-transparent rounded-full animate-spin" />
-                                            ) : (
-                                                <ShoppingCart className="w-5 h-5 fill-current" />
-                                            )}
-                                            {isAdding ? 'Menambahkan...' : 'Tambah ke Keranjang'}
+                                            <ShoppingCart className="w-5 h-5 fill-current" />
+                                            Tambah ke Keranjang
                                         </button>
                                         <button className="p-4 bg-card/30 border border-gray-800 rounded-xl text-gray-400 hover:text-red-500 hover:border-red-500/50 transition-all group">
                                             <Heart className="w-6 h-6 group-hover:fill-current transition-colors" />

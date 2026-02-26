@@ -4,6 +4,8 @@ import Navbar from "./Navbar"
 import Footer from "./Footer"
 import CartDrawer from "../../pages/shop/CartDrawer"
 import ProfileDrawer from "../../pages/auth/ProfileDrawer"
+import BuyNowModal from "../../pages/shop/BuyNowModal"
+import AddToCartModal from "../../pages/shop/AddToCartModal"
 import { useAuthStore } from "../../features/auth/auth.store"
 import { useQuery } from "@tanstack/react-query"
 import { authService } from "../../features/auth/auth.service"
@@ -44,6 +46,8 @@ export default function MainLayout() {
             <Navbar />
             <CartDrawer />
             <ProfileDrawer />
+            <BuyNowModal />
+            <AddToCartModal />
             <main className="flex-1 w-full">
 
                 <Outlet />

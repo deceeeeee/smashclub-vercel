@@ -6,22 +6,31 @@ import { useShopStore } from "../../features/shop/shop.store"
 export default function ShopOrderRefundPage() {
     const { id } = useParams()
     const navigate = useNavigate()
-    const { orderHistory } = useShopStore()
+    const { orderHistory, refundRequestAPI } = useShopStore()
     const [selectedReason, setSelectedReason] = useState<string>("")
     const [additionalInfo, setAdditionalInfo] = useState<string>("")
     const [showSuccessModal, setShowSuccessModal] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
-    // Find the order in history or use mock from image
-    const order = orderHistory.find(o => o.id === id)
+    // Find the order in history
+    const order = orderHistory.find(o => o.id === Number(id))
 
-    const mockOrder = {
-        id: id || "SC-2023081501",
-        date: "15 Agustus 2023",
-        total: 3981000,
-        status: "DIPROSES",
+    if (!order) {
+        return (
+            <div className="bg-[#051111] min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+                    <Package className="w-10 h-10 text-red-500" />
+                </div>
+                <h1 className="text-3xl font-black text-white mb-2 italic uppercase tracking-tighter">PESANAN TIDAK <span className="text-red-500">DITEMUKAN</span></h1>
+                <p className="text-gray-400 font-medium mb-8 max-w-md">Maaf, kami tidak dapat memproses pengajuan refund untuk pesanan yang tidak terdaftar.</p>
+                <Link to="/shop/orders" className="bg-primary text-[#051111] px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-primary/90 transition-all shadow-[0_8px_30px_rgba(34,197,94,0.3)]">
+                    Kembali ke Riwayat Pesanan
+                </Link>
+            </div>
+        )
     }
 
-    const currentOrder = order ? order : mockOrder
+    const currentOrder = order
 
     const reasons = [
         "Barang rusak atau cacat",
@@ -31,13 +40,26 @@ export default function ShopOrderRefundPage() {
         "Lainnya"
     ]
 
-    const handleSubmitRefund = () => {
+    const handleSubmitRefund = async () => {
         if (!selectedReason) {
             alert("Mohon pilih alasan pengembalian dana.")
             return
         }
 
-        setShowSuccessModal(true)
+        setIsSubmitting(true)
+        try {
+            const finalReason = additionalInfo
+                ? `${selectedReason}: ${additionalInfo}`
+                : selectedReason;
+
+            await refundRequestAPI(currentOrder.orderCode, finalReason);
+            setShowSuccessModal(true)
+        } catch (error: any) {
+            console.error(error);
+            alert(error.message || "Gagal mengajukan refund. Silakan coba lagi.");
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     return (
@@ -85,9 +107,9 @@ export default function ShopOrderRefundPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                             <div className="space-y-1.5">
-                                <label className="text-[10px] font-black text-gray-500 tracking-widest uppercase">ID Pesanan</label>
+                                <label className="text-[10px] font-black text-gray-500 tracking-widest uppercase">Kode Pesanan</label>
                                 <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-gray-300">
-                                    #{currentOrder.id}
+                                    #{currentOrder.orderCode}
                                 </div>
                             </div>
                             <div className="space-y-1.5">
@@ -153,9 +175,17 @@ export default function ShopOrderRefundPage() {
                     <div className="pt-6">
                         <button
                             onClick={handleSubmitRefund}
-                            className="w-full bg-primary text-[#051111] py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-primary/90 transition-all shadow-[0_4px_30px_rgba(0,214,181,0.3)] mb-6"
+                            disabled={isSubmitting}
+                            className="w-full bg-primary text-[#051111] py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-primary/90 transition-all shadow-[0_4px_30px_rgba(0,214,181,0.3)] mb-6 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            Ajukan Refund
+                            {isSubmitting ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-[#051111]/30 border-t-[#051111] rounded-full animate-spin"></div>
+                                    Memproses...
+                                </>
+                            ) : (
+                                "Ajukan Refund"
+                            )}
                         </button>
                         <p className="text-center text-[11px] font-bold text-gray-500 leading-relaxed max-w-md mx-auto">
                             Dengan mengajukan refund, Anda menyetujui <button className="text-primary hover:underline">Syarat & Ketentuan</button> pembatalan pesanan di SmashClub.

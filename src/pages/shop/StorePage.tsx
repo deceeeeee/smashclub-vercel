@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+
 import { ShoppingBag } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useShopStore } from '../../features/shop/shop.store';
@@ -7,7 +8,7 @@ import type { Product } from '../../features/shop/shop.types';
 
 export default function StorePage() {
     const navigate = useNavigate();
-    const { products, addToCartAPI, fetchProducts, isLoading, error } = useShopStore();
+    const { products, fetchProducts, openBuyNowModal, openAddToCartModal, isLoading, error } = useShopStore();
     const { token, user } = useAuthStore();
     const [activeCategory, setActiveCategory] = useState<string>('Semua Produk');
 
@@ -97,7 +98,7 @@ export default function StorePage() {
                         <p className="text-gray-400 max-w-md mx-auto mb-10 leading-relaxed">
                             {error
                                 ? 'Maaf, sepertinya terjadi gangguan koneksi saat mengambil katalog. Silakan coba segarkan halaman.'
-                                : `Saat ini tidak ada produk yang tersedia di kategori "${activeCategory}". Jelajahi kategori lain untukgear terbaik.`}
+                                : `Saat ini tidak ada produk yang tersedia di kategori "${activeCategory}". Jelajahi kategori lain untuk gear terbaik.`}
                         </p>
 
                         <button
@@ -125,13 +126,27 @@ export default function StorePage() {
                                             product={product}
                                             formatPrice={formatPrice}
                                             token={token}
-                                            onAddToCart={(e) => {
+                                            onAddToCart={async (e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
+
+                                                const variantId = product.variants?.[0]?.id || product.id;
+                                                if (!isNaN(variantId)) {
+                                                    openAddToCartModal(product);
+                                                } else {
+                                                    alert("Produk tidak memiliki varian valid.");
+                                                }
+                                            }}
+                                            onBuyNow={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+
                                                 if (token && user) {
-                                                    const defaultVariant = product.variants?.[0];
-                                                    if (defaultVariant) {
-                                                        addToCartAPI(user.id.toString(), defaultVariant.id, 1);
+                                                    const variantId = product.variants?.[0]?.id || product.id;
+                                                    if (!isNaN(variantId)) {
+                                                        openBuyNowModal(product);
+                                                    } else {
+                                                        alert("Produk tidak memiliki varian valid.");
                                                     }
                                                 } else {
                                                     navigate('/login');
@@ -153,11 +168,13 @@ function ProductCard({
     product,
     formatPrice,
     onAddToCart,
+    onBuyNow,
     token
 }: {
     product: Product;
     formatPrice: (p: number) => string;
     onAddToCart: (e: React.MouseEvent) => void;
+    onBuyNow: (e: React.MouseEvent) => void;
     token: string | null;
 }) {
     return (
@@ -197,6 +214,13 @@ function ProductCard({
                 >
                     <ShoppingBag className="w-4 h-4 fill-current" />
                     {token ? 'Tambah ke Keranjang' : 'Login untuk Belanja'}
+                </button>
+
+                <button
+                    onClick={onBuyNow}
+                    className="w-full mt-2 bg-white text-background font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition-all active:scale-[0.98]"
+                >
+                    Beli Sekarang
                 </button>
             </div>
         </Link>

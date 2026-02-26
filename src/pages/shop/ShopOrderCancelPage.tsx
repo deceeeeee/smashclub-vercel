@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link, useParams, useNavigate } from "react-router-dom"
-import { ChevronRight, HelpCircle, ExternalLink, Check, Home, ClipboardList, ArrowRight } from "lucide-react"
+import { ChevronRight, HelpCircle, ExternalLink, Check, Home, ClipboardList, ArrowRight, Package } from "lucide-react"
 import { useShopStore } from "../../features/shop/shop.store"
 import { cn } from "../../lib/utils"
 
@@ -12,27 +12,25 @@ export default function ShopOrderCancelPage() {
     const [otherReason, setOtherReason] = useState<string>("")
     const [showSuccessModal, setShowSuccessModal] = useState(false)
 
-    // Find the order in history or use mock from image
-    const order = orderHistory.find(o => o.id === id)
+    // Find the order in history
+    const order = orderHistory.find(o => o.id === Number(id))
 
-    const mockOrder = {
-        id: id || "SC-88291",
-        date: "24 Okt 2023, 14:20 WIB",
-        status: "DIPROSES" as const,
-        items: [
-            {
-                id: '1',
-                name: 'Raket Yonex Astrox 99 Pro',
-                variant: 'Varian: 4U/G5 - Camel Gold',
-                price: 2450000,
-                quantity: 1,
-                image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop'
-            }
-        ],
-        total: 2450000,
+    if (!order) {
+        return (
+            <div className="bg-[#051111] min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+                    <Package className="w-10 h-10 text-red-500" />
+                </div>
+                <h1 className="text-3xl font-black text-white mb-2 italic uppercase tracking-tighter">PESANAN TIDAK <span className="text-red-500">DITEMUKAN</span></h1>
+                <p className="text-gray-400 font-medium mb-8 max-w-md">Maaf, kami tidak dapat memproses pembatalan untuk pesanan yang tidak terdaftar.</p>
+                <Link to="/shop/orders" className="bg-primary text-[#051111] px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-primary/90 transition-all shadow-[0_8px_30px_rgba(34,197,94,0.3)]">
+                    Kembali ke Riwayat Pesanan
+                </Link>
+            </div>
+        )
     }
 
-    const currentOrder = order ? order : mockOrder
+    const currentOrder = order
     const mainItem = currentOrder.items[0]
 
     const formatPrice = (price: number) => {
@@ -62,7 +60,7 @@ export default function ShopOrderCancelPage() {
         }
 
         if (id) {
-            cancelOrder(id)
+            cancelOrder(Number(id))
         }
 
         setShowSuccessModal(true)
@@ -98,7 +96,7 @@ export default function ShopOrderCancelPage() {
                                 <img src={mainItem?.image} alt={mainItem?.name} className="w-full h-full object-contain" />
                             </div>
                             <div className="flex-1 flex flex-col justify-center">
-                                <p className="text-[10px] font-bold text-primary mb-1 uppercase tracking-wider">ID Pesanan: #{currentOrder.id}</p>
+                                <p className="text-[10px] font-bold text-primary mb-1 uppercase tracking-wider">Kode Pesanan: #{currentOrder.orderCode}</p>
                                 <div className="flex justify-between items-start">
                                     <h3 className="text-xl font-bold">{mainItem?.name}</h3>
                                     <span className="text-xl font-bold text-primary">{formatPrice(currentOrder.total)}</span>
@@ -227,7 +225,7 @@ export default function ShopOrderCancelPage() {
                         </p>
 
                         <p className="text-primary font-black uppercase tracking-widest text-sm mb-12">
-                            ID Pesanan: #{currentOrder.id}
+                            KODE PESANAN: #{currentOrder.orderCode}
                         </p>
 
                         {/* Buttons */}

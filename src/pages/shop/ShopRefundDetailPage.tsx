@@ -1,72 +1,82 @@
 import { useLocation, useParams, Link } from "react-router-dom"
-import { Check, Clock, Copy, MessageSquare, ShieldCheck, FileText, Package, XCircle, Wallet } from "lucide-react"
+import { Check, Clock, Copy, MessageSquare, FileText, Package, XCircle, Wallet } from "lucide-react"
 import { useShopStore } from "../../features/shop/shop.store"
 import { cn } from "../../lib/utils"
+import { useEffect } from "react"
+import { Loader2 } from "lucide-react"
 
 export default function ShopRefundDetailPage() {
     const { id } = useParams()
     const location = useLocation()
-    const { orderHistory } = useShopStore()
+    const { orderHistory, getOrderSummaryAPI, isLoading } = useShopStore()
 
-    // Get data passed from previous page or mock it
+    useEffect(() => {
+        if (id) {
+            getOrderSummaryAPI(Number(id))
+        }
+    }, [id, getOrderSummaryAPI])
+
+    // Get data passed from previous page (fallback for reason)
     const locationState = location.state || {}
-    const { reason, additionalInfo, refundDate, status } = locationState
+    const { reason, additionalInfo } = locationState
 
-    // Map status to current step
-    // Status can be: 'PENGAJUAN', 'PROSES', 'BERHASIL', 'DITOLAK'
-    const refundStatus = status || 'BERHASIL'
+    // Find the order in history
+    const order = orderHistory.find(o => o.id === Number(id))
 
-    // Find the order in history or use mock
-    const order = orderHistory.find(o => o.id === id)
-
-    const mockOrder = {
-        id: id || "SC-2023081501",
-        date: "15 Agustus 2023",
-        status: "DIPROSES",
-        items: [
-            {
-                id: '1',
-                name: 'Yonex Astrox 88D Pro Gen-3',
-                variant: '4U/G5 - Cyan',
-                price: 2450000,
-                quantity: 1,
-                image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop'
-            },
-            {
-                id: '2',
-                name: 'Shuttlecock Tournament A1 (12 pcs)',
-                variant: 'Speed 78',
-                price: 125000,
-                quantity: 2,
-                image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=1925&auto=format&fit=crop'
-            }
-        ],
-        subtotal: 2700000,
-        shipping: 45000,
-        total: 2745000
+    if (isLoading && !order) {
+        return (
+            <div className="bg-[#051111] min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                <Loader2 className="w-12 h-12 text-primary animate-spin mb-6" />
+                <h1 className="text-xl font-bold text-white uppercase italic tracking-tighter">Memuat <span className="text-primary">Data Refund...</span></h1>
+            </div>
+        )
     }
 
-    const currentOrder = order ? order : mockOrder
+    if (!order) {
+        return (
+            <div className="bg-[#051111] min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+                    <Package className="w-10 h-10 text-red-500" />
+                </div>
+                <h1 className="text-3xl font-black text-white mb-2 italic uppercase tracking-tighter">REFUND TIDAK <span className="text-red-500">DITEMUKAN</span></h1>
+                <p className="text-gray-400 font-medium mb-8 max-w-md">Maaf, kami tidak dapat menemukan detail refund untuk ID pesanan #{id}.</p>
+                <Link to="/shop/orders" className="bg-primary text-[#051111] px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-primary/90 transition-all shadow-[0_8px_30px_rgba(34,197,94,0.3)]">
+                    Kembali ke Riwayat Pesanan
+                </Link>
+            </div>
+        )
+    }
 
-    const refundId = `RFD-${id || '88219'}`
-    const mockDate = "24 Okt 2023, 10:00 WIB"
-    const displayDate = refundDate || mockDate
-    const displayReason = reason || "Barang Rusak/Cacat. Raket yang diterima terdapat retakan halus pada bagian frame atas saat pertama kali dibuka dari kemasan."
+    const currentOrder = order
 
-    // Mock timeline status logic
-    let currentStep = 1
-    if (refundStatus === 'PROSES') currentStep = 2
-    if (refundStatus === 'BERHASIL' || refundStatus === 'DITOLAK') currentStep = 3
+    const refundId = `RFD-${order.orderCode || '88219'}`
 
-    const steps = [
-        { id: 1, label: "Pengajuan", sub: "24 Okt 2023, 10:00", icon: FileText },
-        { id: 2, label: "Diproses", sub: currentStep > 2 ? "Selesai Ditinjau" : "Sedang Ditinjau", icon: Clock },
-        {
-            id: 3,
-            label: refundStatus === 'DITOLAK' ? "Ditolak" : "Berhasil",
-            sub: currentStep === 3 ? "25 Okt 2023, 14:30" : "Menunggu Selesai",
-            icon: refundStatus === 'DITOLAK' ? XCircle : ShieldCheck
-        },
+    // Use API refund dates
+    const displayDate = order.refundRequestDate || order.date
+    const displayReason = reason || "Barang Rusak/Cacat"
+
+    // Refund status from API: 0 = none, 1 = pending, 2 = approved, 3 = rejected
+    const refundStatusNum = order.refundStatus ?? 0
+    const statusUpdateDate = order.refundStatusUpdateDate || "Menunggu hasil peninjauan"
+
+    // Step 2 configurations based on numeric refund status
+    const getStep2Config = () => {
+        switch (refundStatusNum) {
+            case 1: // APPROVED
+                return { label: "Disetujui", sub: statusUpdateDate, icon: Check, color: "bg-primary" };
+            case 2: // REJECTED
+                return { label: "Ditolak", sub: statusUpdateDate, icon: XCircle, color: "bg-red-500" };
+            default: // REQUESTED, WAITING FOR APPROVAL
+                return { label: "Sedang Ditinjau", sub: "Permintaan sedang diproses", icon: Clock, color: "bg-yellow-500" };
+        }
+    }
+
+    const step2 = getStep2Config();
+    const currentStep = refundStatusNum <= 1 ? 1 : 2
+
+    const steps: { id: number; label: string; sub: string; icon: any; color: string }[] = [
+        { id: 0, label: "Diajukan", sub: displayDate, icon: FileText, color: "bg-primary" },
+        { id: 1, label: step2.label, sub: step2.sub, icon: step2.icon, color: step2.color },
     ]
 
     const formatPrice = (price: number) => {
@@ -108,37 +118,39 @@ export default function ShopRefundDetailPage() {
 
                     <div className="relative z-10">
                         <div className="flex flex-col md:flex-row justify-between relative">
-                            {/* Connector Line */}
-                            <div className="absolute top-5 left-0 w-full h-0.5 bg-white/5 hidden md:block -z-10" />
+                            {/* Connector Line — spans between the centers of step 1 and step 2 */}
+                            <div className="absolute top-7 left-1/4 right-1/4 h-0.5 bg-white/5 hidden md:block -z-10" />
 
                             {steps.map((step) => {
-                                const isCompleted = step.id <= currentStep
+                                const isCompleted = step.id < currentStep
                                 const isActive = step.id === currentStep
                                 const Icon = step.icon
 
                                 return (
                                     <div key={step.id} className="flex flex-col items-center flex-1 text-center mb-6 md:mb-0 relative group">
                                         <div className={cn(
-                                            "w-10 h-10 rounded-full flex items-center justify-center mb-4 transition-all duration-500 border-2 relative z-10",
-                                            isCompleted ? (refundStatus === 'DITOLAK' && step.id === 3 ? "bg-red-500 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)]" : "bg-primary border-primary shadow-[0_0_20px_rgba(0,214,181,0.4)]") :
-                                                isActive ? "bg-[#0a1a1a] border-primary text-primary shadow-[0_0_15px_rgba(0,214,181,0.2)]" :
+                                            "w-14 h-14 rounded-full flex items-center justify-center mb-4 transition-all duration-500 border-2 relative z-10",
+                                            isCompleted ? `${step.color} border-transparent shadow-[0_0_20px_rgba(0,214,181,0.4)]` :
+                                                isActive ? `${step.color} border-transparent shadow-[0_0_20px_rgba(0,214,181,0.4)]` :
                                                     "bg-[#0a1a1a] border-white/10 text-gray-600"
                                         )}>
                                             {isCompleted ? (
-                                                refundStatus === 'DITOLAK' && step.id === 3 ? <XCircle className="w-5 h-5 text-white" /> : <Check className="w-5 h-5 text-[#051111]" />
+                                                <Check className="w-6 h-6 text-[#051111]" />
+                                            ) : isActive ? (
+                                                <Icon className="w-6 h-6 text-[#051111]" />
                                             ) : (
-                                                <Icon className={cn("w-5 h-5", isActive ? "text-primary animate-pulse" : "text-gray-600")} />
+                                                <Icon className="w-6 h-6 text-gray-600" />
                                             )}
                                         </div>
                                         <h3 className={cn(
-                                            "font-bold text-sm mb-1 transition-colors",
-                                            isActive || isCompleted ? (refundStatus === 'DITOLAK' && step.id === 3 ? "text-red-500" : "text-white") : "text-gray-500"
+                                            "font-bold text-base mb-1 transition-colors",
+                                            isActive || isCompleted ? (refundStatusNum === 2 && step.id === 3 ? "text-red-500" : "text-white") : "text-gray-500"
                                         )}>
                                             {step.label}
                                         </h3>
                                         {step.sub && (
                                             <p className={cn(
-                                                "text-[10px] font-medium transition-colors",
+                                                "text-xs font-medium transition-colors",
                                                 isCompleted ? "text-gray-400" : "text-gray-600"
                                             )}>{step.sub}</p>
                                         )}
@@ -167,9 +179,9 @@ export default function ShopRefundDetailPage() {
                                     <p className="font-bold text-lg">{displayDate}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-2">ID PESANAN ASLI</p>
+                                    <p className="text-[10px] font-black text-gray-500 tracking-widest uppercase mb-2">KODE PESANAN ASLI</p>
                                     <Link to={`/shop/order/${currentOrder.id}`} className="font-bold text-lg text-primary hover:underline">
-                                        #{currentOrder.id}
+                                        #{currentOrder.orderCode}
                                     </Link>
                                 </div>
                             </div>
@@ -205,11 +217,16 @@ export default function ShopRefundDetailPage() {
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className="text-lg font-bold group-hover:text-primary transition-colors">{item.name}</h3>
-                                                <span className="text-lg font-bold text-primary">{formatPrice(item.price)}</span>
+                                                <div className="text-right">
+                                                    <div className="text-lg font-bold text-primary">{formatPrice(item.price * item.quantity)}</div>
+                                                    {item.quantity > 1 && (
+                                                        <div className="text-[10px] text-gray-400 font-bold">{item.quantity} x {formatPrice(item.price)}</div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <p className="text-sm text-gray-500 mb-2 font-medium">{item.variant || 'Standard'}</p>
+                                            <p className="text-sm text-gray-500 mb-2 font-medium italic">{item.variantName || item.category || 'Variant Standard'}</p>
                                             <div className="flex justify-between items-center text-sm font-bold text-gray-400">
-                                                <span>{item.quantity} x {formatPrice(item.price)}</span>
+                                                <span>Jumlah: {item.quantity}</span>
                                             </div>
                                         </div>
                                     </div>

@@ -18,7 +18,7 @@ export interface ProductAPI {
 }
 
 export interface Product {
-    id: string;
+    id: number;
     name: string;
     category: string;
     price: number;
@@ -36,6 +36,8 @@ export interface Product {
 
 export interface CartItem extends Product {
     quantity: number;
+    variantName: string;
+    variantImgLink: string;
 }
 
 export interface ProductSearchResponse {
@@ -88,10 +90,86 @@ export interface AddToCartRequest {
 }
 
 export interface AddToCartResponse {
+    // Cart data fields
     cartId: number;
     userId: string;
     items: any[];
     totalPrice: number;
     status: number;
     createdAt: string;
+    // Standard API wrapper fields
+    success?: boolean;
+    message?: string;
+    timestamp?: string;
+}
+
+export interface MessageResponse {
+    message: string;
+}
+
+export interface Order {
+    orderId: number;
+    orderCode: string;
+    user: string;
+    total_price: number;
+    status: number;
+    created_at: string;
+    transactionId: string;
+    userId: string;
+    paymentLink?: string;
+}
+
+export interface OrderResponse {
+    message: string;
+    data: Order;
+    success: boolean;
+    status: number;
+    timestamp: string;
+}
+
+export interface OrderItem {
+    price: number;
+    quantity: number;
+    totalPrice: number;
+    variantId: number;
+    variantName: string;
+}
+
+export interface OrderSummary {
+    items: OrderItem[];
+    orderCode: string;
+    orderDate: string;
+    orderId: number;
+    status: number;
+    subtotal: number;
+    totalPrice: number;
+    paymentLink?: string;
+}
+
+export interface OrderSummaryResponse {
+    data: OrderSummary;
+    success: boolean;
+    message: string;
+    status: number;
+    timestamp: string;
+}
+
+export interface OrderHistoryResponse {
+    data: {
+        content: Order[];
+        empty: boolean;
+        first: boolean;
+        last: boolean;
+        number: number;
+        numberOfElements: number;
+        pageable: any;
+        size: number;
+        sort: any;
+        totalElements: number;
+        totalPages: number;
+    };
+    success: boolean;
+    message: string;
+    status: number;
+    timestamp: string;
 }

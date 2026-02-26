@@ -1,51 +1,55 @@
 import { Link, useParams } from "react-router-dom"
-import { Calendar, Package, ArrowLeft, Clock, MapPin, CheckCircle2, XCircle, CreditCard, ChevronRight, RotateCcw } from "lucide-react"
+import { Calendar, Package, ArrowLeft, Clock, MapPin, CheckCircle2, XCircle, ChevronRight, RotateCcw, Eye, ExternalLink } from "lucide-react"
 import { useShopStore } from "../../features/shop/shop.store"
 import { cn } from "../../lib/utils"
+import { useEffect } from "react"
+import { Loader2 } from "lucide-react"
 
 export default function ShopOrderDetailPage() {
     const { id } = useParams()
-    const { orderHistory } = useShopStore()
+    const { orderHistory, getOrderSummaryAPI, isLoading, error } = useShopStore()
 
-    // Find the order in history or use mock from image
-    const order = orderHistory.find(o => o.id === id)
+    useEffect(() => {
+        if (id) {
+            getOrderSummaryAPI(Number(id))
+        }
+    }, [id, getOrderSummaryAPI])
 
-    const mockOrder = {
-        id: id || "SC-982341",
-        date: "24 Okt 2023, 14:20 WIB",
-        status: "DIPROSES" as const,
-        items: [
-            {
-                id: '1',
-                name: 'Yonex Astrox 88D Pro',
-                variant: 'Varian: 4U/G5 - Camel Gold',
-                price: 2500000,
-                quantity: 1,
-                image: 'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?q=80&w=2070&auto=format&fit=crop'
-            },
-            {
-                id: '2',
-                name: 'Lining Saga II Professional',
-                variant: 'Ukuran: 42 EU - Red/White',
-                price: 1450000,
-                quantity: 1,
-                image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=1925&auto=format&fit=crop'
-            }
-        ],
-        subtotal: 3950000,
-        shipping: 25000,
-        insurance: 5000,
-        serviceFee: 1000,
-        total: 3981000,
-        paymentMethod: 'Virtual Account Mandiri'
+    // Find the order in history
+    const order = orderHistory.find(o => o.id === Number(id))
+
+    if (isLoading && !order) {
+        return (
+            <div className="bg-[#051111] min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                <Loader2 className="w-12 h-12 text-primary animate-spin mb-6" />
+                <h1 className="text-xl font-bold text-white uppercase italic tracking-tighter">Memuat <span className="text-primary">Data Pesanan...</span></h1>
+            </div>
+        )
     }
 
-    const currentOrder = order ? {
+    if (!order) {
+        return (
+            <div className="bg-[#051111] min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+                    <Package className="w-10 h-10 text-red-500" />
+                </div>
+                <h1 className="text-3xl font-black text-white mb-2 italic uppercase tracking-tighter">PESANAN TIDAK <span className="text-red-500">DITEMUKAN</span></h1>
+                <p className="text-gray-400 font-medium mb-8 max-w-md">
+                    {error || `Maaf, kami tidak dapat menemukan detail untuk ID pesanan #${id}.`}
+                </p>
+                <Link to="/shop/orders" className="bg-primary text-[#051111] px-8 py-3.5 rounded-2xl text-sm font-black hover:bg-primary/90 transition-all shadow-[0_8px_30px_rgba(34,197,94,0.3)]">
+                    Kembali ke Riwayat Pesanan
+                </Link>
+            </div>
+        )
+    }
+
+    const currentOrder = {
         ...order,
-        variant: 'Standard', // Store doesn't have variants yet, using fallback
+        variant: 'Standard',
         insurance: order.insurance || 0,
         shipping: order.shipping || 0
-    } : mockOrder;
+    };
 
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat('id-ID', {
@@ -56,11 +60,11 @@ export default function ShopOrderDetailPage() {
     };
 
     const statusBadgeStyles = {
+        'DIBATALKAN': 'bg-red-500/10 border-red-500/30 text-red-500',
         'MENUNGGU PEMBAYARAN': 'bg-yellow-500/10 border-yellow-500/30 text-yellow-500',
         'DIPROSES': 'bg-blue-500/10 border-blue-500/30 text-blue-500',
         'SIAP DIAMBIL': 'bg-primary/10 border-primary/30 text-primary',
-        'SELESAI': 'bg-green-500/10 border-green-500/30 text-green-500',
-        'DIBATALKAN': 'bg-red-500/10 border-red-500/30 text-red-500'
+        'SELESAI': 'bg-green-500/10 border-green-500/30 text-green-500'
     }
 
     return (
@@ -77,33 +81,81 @@ export default function ShopOrderDetailPage() {
 
                 <div className="w-full">
                     {/* Status Banner */}
-                    {currentOrder.status === 'DIBATALKAN' ? (
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-3xl p-10 mb-10 text-center relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-red-500/20 rounded-full blur-[100px]"></div>
-                            <div className="relative z-10">
-                                <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(239,68,68,0.4)]">
-                                    <XCircle className="w-10 h-10 text-[#051111]" />
+                    {(() => {
+                        const status = currentOrder.status;
+                        const configs = {
+                            'MENUNGGU PEMBAYARAN': {
+                                bgColor: 'bg-yellow-500/10',
+                                borderColor: 'border-yellow-500/20',
+                                iconBg: 'bg-yellow-500',
+                                glowColor: 'bg-yellow-500/20',
+                                icon: <Clock className="w-10 h-10 text-[#051111]" />,
+                                title: <>MENUNGGU <span className="text-yellow-500">PEMBAYARAN</span></>,
+                                desc: <>Segera selesaikan pembayaran untuk pesanan <span className="text-white">#{currentOrder.orderCode}</span> sebelum batas waktu berakhir.</>
+                            },
+                            'DIPROSES': {
+                                bgColor: 'bg-blue-500/10',
+                                borderColor: 'border-blue-500/20',
+                                iconBg: 'bg-blue-500',
+                                glowColor: 'bg-blue-500/20',
+                                icon: <Package className="w-10 h-10 text-[#051111]" />,
+                                title: <>PEMBAYARAN <span className="text-blue-500">BERHASIL!</span></>,
+                                desc: <>Pesanan <span className="text-white">#{currentOrder.orderCode}</span> sedang kami siapkan. Kami akan memberitahu Anda jika sudah siap.</>
+                            },
+                            'SIAP DIAMBIL': {
+                                bgColor: 'bg-primary/10',
+                                borderColor: 'border-primary/20',
+                                iconBg: 'bg-primary',
+                                glowColor: 'bg-primary/20',
+                                icon: <MapPin className="w-10 h-10 text-[#051111]" />,
+                                title: <>SIAP <span className="text-primary">DIAMBIL!</span></>,
+                                desc: <>Perlengkapan Anda sudah siap di lokasi pengambilan. Silakan tunjukkan kode pesanan <span className="text-white">#{currentOrder.orderCode}</span> saat pengambilan.</>
+                            },
+                            'SELESAI': {
+                                bgColor: 'bg-green-500/10',
+                                borderColor: 'border-green-500/20',
+                                iconBg: 'bg-green-500',
+                                glowColor: 'bg-green-500/20',
+                                icon: <CheckCircle2 className="w-10 h-10 text-[#051111]" />,
+                                title: <>PESANAN <span className="text-green-500">SELESAI</span></>,
+                                desc: <>Terima kasih telah berbelanja di SmashClub. Kami harap Anda puas dengan perlengkapan baru Anda!</>
+                            },
+                            'DIBATALKAN': {
+                                bgColor: 'bg-red-500/10',
+                                borderColor: 'border-red-500/20',
+                                iconBg: 'bg-red-500',
+                                glowColor: 'bg-red-500/20',
+                                icon: <XCircle className="w-10 h-10 text-[#051111]" />,
+                                title: <>PESANAN <span className="text-red-500">DIBATALKAN</span></>,
+                                desc: <>Pesanan <span className="text-white">#{currentOrder.orderCode}</span> telah dibatalkan. Hubungi bantuan jika ini adalah kesalahan.</>
+                            }
+                        };
+
+                        const config = configs[status as keyof typeof configs] || configs['DIPROSES'];
+
+                        return (
+                            <div className={cn(config.bgColor, "border", config.borderColor, "rounded-3xl p-10 mb-10 text-center relative overflow-hidden group")}>
+                                <div className={cn("absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 rounded-full blur-[100px] transition-all duration-700", config.glowColor)}></div>
+                                <div className="relative z-10">
+                                    <div className={cn("w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl transition-transform duration-500 hover:scale-110", config.iconBg)}>
+                                        {config.icon}
+                                    </div>
+                                    <h1 className="text-5xl font-black mb-4 uppercase italic tracking-tighter">{config.title}</h1>
+                                    <p className="text-gray-400 font-bold max-w-2xl mx-auto text-lg leading-relaxed mb-6">
+                                        {config.desc}
+                                    </p>
+                                    {status === 'MENUNGGU PEMBAYARAN' && currentOrder.paymentLink && (
+                                        <button
+                                            onClick={() => window.open(currentOrder.paymentLink!, '_blank')}
+                                            className="bg-yellow-500 text-[#051111] px-10 py-4 rounded-2xl text-base font-black hover:bg-yellow-400 transition-all shadow-[0_10px_30px_rgba(234,179,8,0.3)] flex items-center gap-3 mx-auto uppercase tracking-wider"
+                                        >
+                                            <ExternalLink className="w-5 h-5" /> Bayar Sekarang
+                                        </button>
+                                    )}
                                 </div>
-                                <h1 className="text-5xl font-black mb-4 uppercase italic tracking-tighter">PESANAN <span className="text-red-500">DIBATALKAN</span></h1>
-                                <p className="text-gray-400 font-bold max-w-2xl mx-auto text-lg leading-relaxed">
-                                    Pesanan <span className="text-white">#{currentOrder.id}</span> telah dibatalkan. Dana (jika sudah terbayar) akan dikembalikan sesuai kebijakan refund kami.
-                                </p>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="bg-primary/10 border border-primary/20 rounded-3xl p-10 mb-10 text-center relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-primary/20 rounded-full blur-[100px] group-hover:bg-primary/30 transition-all duration-700"></div>
-                            <div className="relative z-10">
-                                <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(0,214,181,0.4)] transition-transform duration-500 hover:scale-110">
-                                    <CheckCircle2 className="w-10 h-10 text-[#051111]" />
-                                </div>
-                                <h1 className="text-5xl font-black mb-4 uppercase italic tracking-tighter">PEMBAYARAN <span className="text-primary">BERHASIL!</span></h1>
-                                <p className="text-gray-400 font-bold max-w-2xl mx-auto text-lg leading-relaxed">
-                                    Pesanan <span className="text-white">#{currentOrder.id}</span> telah kami terima. Kami sedang menyiapkan perlengkapan SmashClub Anda untuk segera siap diambil.
-                                </p>
-                            </div>
-                        </div>
-                    )}
+                        );
+                    })()}
 
                     {/* Header Section */}
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
@@ -121,21 +173,22 @@ export default function ShopOrderDetailPage() {
                             </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
-                            <Link
-                                to={`/shop/order/${currentOrder.id}/cancel`}
-                                className={cn(
-                                    "px-6 py-3 rounded-xl border border-white/10 text-gray-400 hover:bg-white/5 transition-all text-xs font-black flex items-center gap-2",
-                                    currentOrder.status === 'DIBATALKAN' && "opacity-50 pointer-events-none"
-                                )}
-                            >
-                                <XCircle className="w-4 h-4" /> Batalkan Pesanan
-                            </Link>
-                            <Link
-                                to={`/shop/order/${currentOrder.id}/refund`}
-                                className="px-6 py-3 rounded-xl border border-blue-500/30 text-blue-500 hover:bg-blue-500/5 transition-all text-xs font-black flex items-center gap-2"
-                            >
-                                <RotateCcw className="w-4 h-4" /> Ajukan Refund
-                            </Link>
+                            {/* Refund button logic */}
+                            {currentOrder.refundStatus === 1 || currentOrder.status === 'DIBATALKAN' ? (
+                                <Link
+                                    to={`/shop/order/${currentOrder.id}/refund-details`}
+                                    className="px-6 py-3 rounded-xl border border-purple-500/30 text-purple-500 hover:bg-purple-500/5 transition-all text-xs font-black flex items-center gap-2"
+                                >
+                                    <Eye className="w-4 h-4" /> Refund Detail
+                                </Link>
+                            ) : (currentOrder.status === 'DIPROSES' || currentOrder.status === 'SIAP DIAMBIL') && currentOrder.refundStatus === 0 ? (
+                                <Link
+                                    to={`/shop/order/${currentOrder.id}/refund`}
+                                    className="px-6 py-3 rounded-xl border border-blue-500/30 text-blue-500 hover:bg-blue-500/5 transition-all text-xs font-black flex items-center gap-2"
+                                >
+                                    <RotateCcw className="w-4 h-4" /> Ajukan Refund
+                                </Link>
+                            ) : null}
                             <Link to="/shop" className="px-8 py-3 rounded-xl bg-primary text-[#051111] hover:bg-primary/90 transition-all text-xs font-black flex items-center gap-2 shadow-[0_0_20px_rgba(0,214,181,0.3)] font-sans">
                                 Beli Produk Lain
                             </Link>
@@ -159,14 +212,21 @@ export default function ShopOrderDetailPage() {
                                 {currentOrder.items.map((item: any, idx) => (
                                     <div key={idx} className="flex gap-6 group">
                                         <div className="w-24 h-24 rounded-2xl bg-gray-900 border border-white/5 overflow-hidden flex-shrink-0 flex items-center justify-center p-3 group-hover:border-primary/30 transition-colors">
-                                            <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
+                                            <img src={item.variantImgLink} alt={item.name} className="w-full h-full object-contain" />
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className="text-lg font-bold group-hover:text-primary transition-colors">{item.name}</h3>
-                                                <span className="text-lg font-bold text-primary">{formatPrice(item.price)}</span>
+                                                <div className="text-right">
+                                                    <div className="text-lg font-bold text-primary">{formatPrice(item.price * item.quantity)}</div>
+                                                    {item.quantity > 1 && (
+                                                        <div className="text-[10px] text-gray-500 font-bold">{item.quantity} x {formatPrice(item.price)}</div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <p className="text-sm text-gray-500 mb-4 font-medium">{item.variant || (item as any).category}</p>
+                                            <p className="text-sm text-gray-400 mb-4 font-medium italic">
+                                                {item.variantName || item.category || 'Variant Standard'}
+                                            </p>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm font-bold text-gray-400">Jumlah: {item.quantity}</span>
                                             </div>
@@ -198,8 +258,36 @@ export default function ShopOrderDetailPage() {
                                 </div>
                                 <div>
                                     <h4 className="text-[10px] font-black text-gray-500 tracking-[0.2em] uppercase mb-4">ESTIMASI PENGAMBILAN</h4>
-                                    <p className="font-bold text-lg mb-1">25 - 26 Okt 2023</p>
-                                    <p className="text-sm text-gray-500 font-medium mb-6 text-emerald-400">Pukul 10:00 - 20:00 WIB</p>
+                                    {(() => {
+                                        const orderDate = currentOrder.rawDate ? new Date(currentOrder.rawDate) : new Date();
+                                        const pickupStart = new Date(orderDate.getTime() + 5 * 60000);
+                                        const pickupEnd = new Date(orderDate.getTime() + 10 * 60000);
+
+                                        const formattedDay = pickupStart.toLocaleDateString('id-ID', {
+                                            day: 'numeric',
+                                            month: 'short',
+                                            year: 'numeric'
+                                        });
+
+                                        const startTime = pickupStart.toLocaleTimeString('id-ID', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: false
+                                        });
+
+                                        const endTime = pickupEnd.toLocaleTimeString('id-ID', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: false
+                                        });
+
+                                        return (
+                                            <>
+                                                <p className="font-bold text-lg mb-1">{formattedDay}</p>
+                                                <p className="text-sm text-gray-500 font-medium mb-6 text-emerald-400">Pukul {startTime} - {endTime} WIB</p>
+                                            </>
+                                        );
+                                    })()}
 
                                     <h4 className="text-[10px] font-black text-gray-500 tracking-[0.2em] uppercase mb-4">INSTRUKSI PENGAMBILAN</h4>
                                     <ul className="space-y-3">
@@ -248,20 +336,20 @@ export default function ShopOrderDetailPage() {
                                 <span className="text-3xl font-black text-primary">{formatPrice(currentOrder.total)}</span>
                             </div>
 
+                            {currentOrder.status === 'MENUNGGU PEMBAYARAN' && currentOrder.paymentLink && (
+                                <button
+                                    onClick={() => window.open(currentOrder.paymentLink!, '_blank')}
+                                    className="w-full bg-yellow-500 text-[#051111] py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-yellow-400 transition-all shadow-[0_4px_20px_rgba(234,179,8,0.2)] mb-4"
+                                >
+                                    <ExternalLink className="w-5 h-5" /> Bayar Sekarang (External)
+                                </button>
+                            )}
+
                             <Link to="/shop/orders" className="w-full bg-primary text-[#051111] py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-all shadow-[0_4px_20px_rgba(0,214,181,0.2)] mb-8">
                                 <Package className="w-5 h-5" /> Lihat Riwayat Pesanan
                             </Link>
 
                             <div className="space-y-6">
-                                <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
-                                    <div className="w-10 h-10 flex items-center justify-center bg-white/10 rounded-lg">
-                                        <CreditCard className="w-5 h-5 text-gray-400" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-[9px] font-black text-gray-500 tracking-[0.1em] uppercase mb-0.5">METODE PEMBAYARAN</p>
-                                        <p className="text-xs font-bold">{currentOrder.paymentMethod}</p>
-                                    </div>
-                                </div>
                                 <p className="text-xs text-gray-500 font-bold flex items-center justify-center gap-2 hover:text-white cursor-help transition-colors">
                                     <CheckCircle2 className="w-4 h-4" /> Butuh bantuan dengan pesanan ini?
                                 </p>
@@ -279,43 +367,111 @@ export default function ShopOrderDetailPage() {
                 <div className="mt-12 bg-[#0a1a1a] border border-white/5 rounded-3xl p-10">
                     <h2 className="text-2xl font-bold mb-10">Status Pesanan</h2>
 
-                    <div className="space-y-0">
-                        {/* Timeline Item 1 */}
-                        <div className="relative pl-12 pb-12">
-                            <div className="absolute left-0 top-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center z-10 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-                                <CheckCircle2 className="w-5 h-5 text-[#051111]" />
-                            </div>
-                            <div className="absolute left-[15px] top-8 bottom-0 w-[2px] bg-white/10" />
-                            <div>
-                                <h4 className="text-xl font-bold mb-1">Pesanan Dibuat</h4>
-                                <p className="text-xs text-gray-500 mb-3 font-bold">{currentOrder.date}</p>
-                                <p className="text-sm text-gray-400 leading-relaxed max-w-xl font-medium">Menunggu konfirmasi pembayaran dari sistem perbankan. Harap selesaikan pembayaran sebelum batas waktu berakhir.</p>
-                            </div>
-                        </div>
+                    {(() => {
+                        const status = currentOrder.status;
+                        const statusOrder = ['MENUNGGU PEMBAYARAN', 'DIPROSES', 'SIAP DIAMBIL', 'SELESAI'];
+                        const isCancelled = status === 'DIBATALKAN';
+                        const currentIdx = isCancelled ? 0 : statusOrder.indexOf(status);
 
-                        {/* Timeline Item 2 */}
-                        <div className="relative pl-12 pb-12">
-                            <div className="absolute left-0 top-0 w-8 h-8 rounded-full border-2 border-white/10 bg-[#0a1a1a] flex items-center justify-center z-10">
-                                <Clock className="w-4 h-4 text-gray-600" />
-                            </div>
-                            <div className="absolute left-[15px] top-8 bottom-0 w-[2px] bg-white/5" />
-                            <div>
-                                <h4 className="text-xl font-bold mb-1 text-gray-500">Pembayaran Diterima</h4>
-                                <p className="text-xs text-gray-600 mb-3 font-bold">Belum diproses</p>
-                            </div>
-                        </div>
+                        const timelineSteps = [
+                            {
+                                label: 'Pesanan Dibuat',
+                                desc: 'Menunggu konfirmasi pembayaran dari sistem perbankan. Harap selesaikan pembayaran sebelum batas waktu berakhir.',
+                                date: currentOrder.date,
+                                icon: <Clock className="w-5 h-5" />,
+                                iconSmall: <Clock className="w-4 h-4" />,
+                            },
+                            {
+                                label: 'Pembayaran Diterima',
+                                desc: 'Pembayaran telah dikonfirmasi. Pesanan sedang diproses dan disiapkan.',
+                                date: status === 'DIPROSES' ? currentOrder.updatedAt : (statusOrder.indexOf(status) > 1 ? currentOrder.updatedAt : null),
+                                icon: <CheckCircle2 className="w-5 h-5" />,
+                                iconSmall: <CheckCircle2 className="w-4 h-4" />,
+                            },
+                            {
+                                label: 'Pesanan Siap Diambil',
+                                desc: 'Pesanan Anda sudah siap untuk diambil di lokasi pengambilan.',
+                                date: status === 'SIAP DIAMBIL' ? currentOrder.updatedAt : (statusOrder.indexOf(status) > 2 ? currentOrder.updatedAt : null),
+                                icon: <MapPin className="w-5 h-5" />,
+                                iconSmall: <MapPin className="w-4 h-4" />,
+                            },
+                            {
+                                label: 'Pesanan Selesai',
+                                desc: 'Pesanan telah selesai. Terima kasih telah berbelanja di SmashClub!',
+                                date: status === 'SELESAI' ? currentOrder.updatedAt : null,
+                                icon: <Package className="w-5 h-5" />,
+                                iconSmall: <Package className="w-4 h-4" />,
+                            },
+                        ];
 
-                        {/* Timeline Item 3 (Last) */}
-                        <div className="relative pl-12">
-                            <div className="absolute left-0 top-0 w-8 h-8 rounded-full border-2 border-white/10 bg-[#0a1a1a] flex items-center justify-center z-10">
-                                <Package className="w-4 h-4 text-gray-600" />
+                        return (
+                            <div className="space-y-0">
+                                {isCancelled && (
+                                    <div className="relative pl-12 pb-12">
+                                        <div className="absolute left-0 top-0 w-8 h-8 rounded-full bg-red-500 flex items-center justify-center z-10 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                                            <XCircle className="w-5 h-5 text-[#051111]" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xl font-bold mb-1 text-red-500">Pesanan Dibatalkan</h4>
+                                            <p className="text-xs text-gray-500 mb-3 font-bold">{currentOrder.updatedAt || currentOrder.date}</p>
+                                            <p className="text-sm text-gray-400 leading-relaxed max-w-xl font-medium">Pesanan ini telah dibatalkan. Hubungi bantuan jika ini adalah kesalahan.</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!isCancelled && timelineSteps.map((step, idx) => {
+                                    const isCompleted = idx < currentIdx;
+                                    const isActive = idx === currentIdx;
+                                    const isPending = idx > currentIdx;
+                                    const isLast = idx === timelineSteps.length - 1;
+
+                                    return (
+                                        <div key={idx} className={cn("relative pl-12", !isLast && "pb-12")}>
+                                            {/* Dot */}
+                                            {isCompleted ? (
+                                                <div className="absolute left-0 top-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center z-10 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+                                                    <CheckCircle2 className="w-5 h-5 text-[#051111]" />
+                                                </div>
+                                            ) : isActive ? (
+                                                <div className="absolute left-0 top-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center z-10 shadow-[0_0_15px_rgba(34,197,94,0.3)] animate-pulse">
+                                                    {step.icon && <span className="text-[#051111]">{step.icon}</span>}
+                                                </div>
+                                            ) : (
+                                                <div className="absolute left-0 top-0 w-8 h-8 rounded-full border-2 border-white/10 bg-[#0a1a1a] flex items-center justify-center z-10">
+                                                    <span className="text-gray-600">{step.iconSmall}</span>
+                                                </div>
+                                            )}
+
+                                            {/* Line */}
+                                            {!isLast && (
+                                                <div className={cn(
+                                                    "absolute left-[15px] top-8 bottom-0 w-[2px]",
+                                                    isCompleted ? "bg-primary/40" : "bg-white/5"
+                                                )} />
+                                            )}
+
+                                            {/* Content */}
+                                            <div>
+                                                <h4 className={cn(
+                                                    "text-xl font-bold mb-1",
+                                                    isPending ? "text-gray-500" : "text-white"
+                                                )}>{step.label}</h4>
+                                                {(isCompleted || isActive) && (
+                                                    <>
+                                                        <p className="text-xs text-gray-500 mb-3 font-bold">{step.date || currentOrder.date}</p>
+                                                        <p className="text-sm text-gray-400 leading-relaxed max-w-xl font-medium">{step.desc}</p>
+                                                    </>
+                                                )}
+                                                {isPending && (
+                                                    <p className="text-xs text-gray-600 font-bold">Belum diproses</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                            <div>
-                                <h4 className="text-xl font-bold mb-1 text-gray-500">Pesanan Siap Diambil</h4>
-                                <p className="text-xs text-gray-600 mb-1 font-bold">Belum tersedia</p>
-                            </div>
-                        </div>
-                    </div>
+                        );
+                    })()}
                 </div>
             </div>
 

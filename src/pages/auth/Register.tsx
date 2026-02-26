@@ -23,6 +23,7 @@ export default function Register() {
     const { token } = useAuthStore()
     const [showPassword, setShowPassword] = useState(false)
     const [generalError, setGeneralError] = useState<string | null>(null)
+    const [showSuccessModal, setShowSuccessModal] = useState(false)
 
     // Redirect if already logged in
     useEffect(() => {
@@ -38,16 +39,9 @@ export default function Register() {
 
     const mutation = useMutation({
         mutationFn: authService.register,
-        onSuccess: (response, variables) => {
+        onSuccess: (response) => {
             if (response.success) {
-                // Navigate to verification page with user data
-                navigate("/verify", {
-                    state: {
-                        email: variables.email,
-                        fullName: variables.fullName,
-                        userId: response.data?.id
-                    }
-                })
+                setShowSuccessModal(true)
             } else {
                 // Handle business logic errors
                 if (response.error === "Validation failed" && response.details) {
@@ -231,6 +225,42 @@ export default function Register() {
                     </p>
                 </div>
             </div>
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+                    <div className="relative bg-[#16282a] border border-white/10 w-full max-w-md rounded-[2rem] p-10 text-center shadow-2xl overflow-hidden group">
+                        {/* Decorative background element */}
+                        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-40 h-40 bg-primary/10 rounded-full blur-[60px]" />
+
+                        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-8 relative border border-primary/20">
+                            <Mail className="w-10 h-10 text-primary" />
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-4 border-[#16282a]" />
+                        </div>
+
+                        <h3 className="text-2xl font-black text-white mb-4 italic uppercase tracking-tighter">
+                            Check Your <span className="text-primary">Email!</span>
+                        </h3>
+
+                        <div className="space-y-4 mb-10">
+                            <p className="text-gray-400 font-medium leading-relaxed">
+                                Kami telah mengirimkan link verifikasi ke email Anda. Silakan klik link tersebut untuk mengaktifkan akun.
+                            </p>
+                            <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.2em]">
+                                Periksa juga folder Spam jika tidak menemukannya.
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => navigate('/login')}
+                            className="w-full bg-primary text-background font-black py-4 rounded-xl hover:bg-primary/90 transition-all shadow-[0_0_30px_rgba(0,214,181,0.2)] active:scale-95 uppercase tracking-widest text-xs"
+                        >
+                            Ke Halaman Login
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
