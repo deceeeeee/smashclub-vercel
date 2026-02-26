@@ -51,20 +51,13 @@ export default function ShopRefundDetailPage() {
 
     const refundId = `RFD-${order.orderCode || '88219'}`
 
-    // Format date helper
-    const formatDate = (dateStr: string | null) => {
-        if (!dateStr) return null
-        const d = new Date(dateStr)
-        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB'
-    }
-
     // Use API refund dates
-    const displayDate = formatDate(order.refundRequestDate) || order.date
+    const displayDate = order.refundRequestDate || order.date
     const displayReason = reason || "Barang Rusak/Cacat"
 
     // Refund status from API: 0 = none, 1 = pending, 2 = approved, 3 = rejected
     const refundStatusNum = order.refundStatus ?? 0
-    const statusUpdateDate = formatDate(order.refundStatusUpdateDate) || "Menunggu hasil peninjauan"
+    const statusUpdateDate = order.refundStatusUpdateDate || "Menunggu hasil peninjauan"
 
     // Step 2 configurations based on numeric refund status
     const getStep2Config = () => {
