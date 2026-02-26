@@ -61,8 +61,8 @@ export default function AddToCartModal() {
                 let variantId: number;
                 if (selectedVariant) {
                     variantId = selectedVariant.id;
-                } else if (!isNaN(parseInt(addToCartProduct.id))) {
-                    variantId = parseInt(addToCartProduct.id);
+                } else if (!isNaN(addToCartProduct.id)) {
+                    variantId = addToCartProduct.id;
                 } else {
                     throw new Error('ID Produk tidak valid');
                 }
@@ -75,9 +75,9 @@ export default function AddToCartModal() {
                     name: selectedVariant
                         ? `${addToCartProduct.name} - ${selectedVariant.variantName}`
                         : addToCartProduct.name,
-                    id: selectedVariant
-                        ? `${addToCartProduct.id}-${selectedVariant.id}`
-                        : addToCartProduct.id,
+                    id: Number(selectedVariant
+                        ? selectedVariant.id
+                        : addToCartProduct.id),
                 };
                 addToCart(productWithSelectedVariant, quantity);
             }

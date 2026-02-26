@@ -39,7 +39,7 @@ export default function BuyNowModal() {
     };
 
     const handleConfirmPurchase = () => {
-        const variantId = selectedVariant ? selectedVariant.id : parseInt(buyNowProduct.id);
+        const variantId = selectedVariant ? selectedVariant.id : buyNowProduct.id;
 
         closeBuyNowModal();
         navigate('/shop/checkout', {
