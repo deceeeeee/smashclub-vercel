@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from "react-router-dom"
-import { ShoppingBag, ArrowLeft, Loader2, Package, Clock, MapPin, CheckCircle2 } from "lucide-react"
+import { ShoppingBag, ArrowLeft, Loader2, Package, Clock, MapPin, CheckCircle2, AlertCircle, X } from "lucide-react"
 import { useState } from "react"
 import { useShopStore } from "../../features/shop/shop.store"
 
@@ -8,6 +8,7 @@ export default function ShopCheckoutPage() {
     const navigate = useNavigate()
     const location = useLocation()
     const [isProcessing, setIsProcessing] = useState(false)
+    const [errorModal, setErrorModal] = useState<{ show: boolean, message: string }>({ show: false, message: "" })
 
     // Check for order data passed from previous steps
     const orderIdFromState = location.state?.orderId
@@ -62,7 +63,7 @@ export default function ShopCheckoutPage() {
                 if (response?.data?.orderId) {
                     orderId = response.data.orderId;
                 } else {
-                    alert("Checkout gagal.");
+                    setErrorModal({ show: true, message: "Checkout gagal." });
                     setIsProcessing(false);
                     return;
                 }
@@ -73,7 +74,7 @@ export default function ShopCheckoutPage() {
                 if (response?.data?.orderId) {
                     orderId = response.data.orderId;
                 } else {
-                    alert("Checkout gagal.");
+                    setErrorModal({ show: true, message: "Checkout gagal." });
                     setIsProcessing(false);
                     return;
                 }
@@ -81,7 +82,7 @@ export default function ShopCheckoutPage() {
 
             // If we still don't have an orderId (and it wasn't already in state), fail
             if (!orderId) {
-                alert("Gagal melanjutkan checkout.");
+                setErrorModal({ show: true, message: "Gagal melanjutkan checkout." });
                 setIsProcessing(false);
                 return;
             }
@@ -125,7 +126,7 @@ export default function ShopCheckoutPage() {
             navigate(`/shop/order/${finalOrderId}`);
         } catch (error) {
             console.error(error);
-            alert("Gagal melakukan pembayaran. Silakan coba lagi.");
+            setErrorModal({ show: true, message: "Gagal melakukan pembayaran. Silakan coba lagi." });
         } finally {
             setIsProcessing(false)
         }
@@ -266,6 +267,48 @@ export default function ShopCheckoutPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Error Modal */}
+            {errorModal.show && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+                        onClick={() => setErrorModal({ ...errorModal, show: false })}
+                    />
+                    <div className="relative bg-[#16282a] border border-white/10 w-full max-w-md rounded-[2rem] p-10 text-center shadow-2xl overflow-hidden group animate-in fade-in zoom-in duration-300">
+                        {/* Decorative background element */}
+                        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-40 h-40 bg-red-500/10 rounded-full blur-[60px]" />
+
+                        <button
+                            onClick={() => setErrorModal({ ...errorModal, show: false })}
+                            className="absolute top-6 right-6 p-2 rounded-xl bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+
+                        <div className="w-20 h-20 bg-red-500/10 rounded-3xl flex items-center justify-center mx-auto mb-8 relative border border-red-500/20">
+                            <AlertCircle className="w-10 h-10 text-red-500" />
+                        </div>
+
+                        <h3 className="text-2xl font-black text-white mb-4 italic uppercase tracking-tighter">
+                            Oops! <span className="text-red-500">Ada Masalah</span>
+                        </h3>
+
+                        <div className="space-y-4 mb-10">
+                            <p className="text-gray-400 font-medium leading-relaxed">
+                                {errorModal.message}
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => setErrorModal({ ...errorModal, show: false })}
+                            className="w-full bg-red-500 text-white font-black py-4 rounded-xl hover:bg-red-600 transition-all shadow-[0_0_30px_rgba(239,68,68,0.2)] active:scale-95 uppercase tracking-widest text-xs"
+                        >
+                            Tutup & Coba Lagi
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
