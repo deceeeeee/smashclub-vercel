@@ -59,20 +59,34 @@ export default function ShopCheckoutPage() {
             // If it's a Buy Now and we don't have an orderId yet, create it now
             if (isBuyNow && !orderId && buyNowItem) {
                 response = await buyNowAPI(buyNowItem.variantId, buyNowItem.quantity);
-                if (response && response.data?.orderId) {
+                if (response?.data?.orderId) {
                     orderId = response.data.orderId;
+                } else {
+                    alert("Checkout gagal.");
+                    setIsProcessing(false);
+                    return;
                 }
             }
             // If it's a regular cart checkout (not buy now) and no orderId, call checkoutCartAPI
             else if (!isBuyNow && !orderId && cart.length > 0) {
                 response = await checkoutCartAPI();
-                if (response && response.data?.orderId) {
+                if (response?.data?.orderId) {
                     orderId = response.data.orderId;
+                } else {
+                    alert("Checkout gagal.");
+                    setIsProcessing(false);
+                    return;
                 }
             }
 
-            // Fallback to mock if API failed or no orderId
-            const finalOrderId = (orderId || `SC-${Math.floor(100000 + Math.random() * 900000)}`).toString();
+            // If we still don't have an orderId (and it wasn't already in state), fail
+            if (!orderId) {
+                alert("Gagal melanjutkan checkout.");
+                setIsProcessing(false);
+                return;
+            }
+
+            const finalOrderId = orderId.toString();
             const paymentLink = response?.data?.paymentLink;
 
             addOrder({
