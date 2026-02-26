@@ -11,7 +11,7 @@ export default function ProductDetailPage() {
     const { products, fetchProductById, openBuyNowModal, openAddToCartModal, isLoading, error } = useShopStore();
     const { token, user } = useAuthStore();
 
-    const product = products.find(p => p.id === productId);
+    const product = products.find(p => p.id === Number(productId));
 
     const [selectedImage, setSelectedImage] = useState('');
     const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
@@ -97,8 +97,8 @@ export default function ProductDetailPage() {
             let variantId: number | null = null;
             if (selectedVariant) {
                 variantId = selectedVariant.id;
-            } else if (!isNaN(parseInt(product.id))) {
-                variantId = parseInt(product.id);
+            } else if (!isNaN(product.id)) {
+                variantId = product.id;
             }
 
             if (variantId !== null) {

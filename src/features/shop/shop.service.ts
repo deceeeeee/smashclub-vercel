@@ -23,7 +23,7 @@ export const shopService = {
         }
     },
 
-    getProductById: async (id: string): Promise<ProductResponse> => {
+    getProductById: async (id: number | string): Promise<ProductResponse> => {
         try {
             const response = await api.get<ProductResponse>(`/products/${id}`);
             return response.data;
@@ -69,8 +69,11 @@ export const shopService = {
 
     updateCartItem: async (cartItemId: number, quantity: number): Promise<AddToCartResponse> => {
         try {
-            const response = await api.put<AddToCartResponse>(`/cart/update/${cartItemId}`, { quantity });
-            if (response.status !== 200 || (response.data as any)?.success === false) {
+            const response = await api.put<AddToCartResponse>(`/cart/update/${cartItemId}`, {
+                cartItemId,
+                quantity
+            });
+            if (response.status !== 200) {
                 const msg = (response.data as any)?.message || `Gagal memperbarui jumlah (HTTP ${response.status})`;
                 throw new Error(msg);
             }
