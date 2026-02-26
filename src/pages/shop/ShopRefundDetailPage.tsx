@@ -21,7 +21,7 @@ export default function ShopRefundDetailPage() {
     const { reason, additionalInfo } = locationState
 
     // Find the order in history
-    const order = orderHistory.find(o => o.id === id)
+    const order = orderHistory.find(o => o.id === Number(id))
 
     if (isLoading && !order) {
         return (

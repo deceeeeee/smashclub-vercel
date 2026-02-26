@@ -5,7 +5,7 @@ import { shopService } from './shop.service';
 import { useAuthStore } from '../auth/auth.store';
 
 export interface ShopOrder {
-    id: string;
+    id: number;
     orderCode: string;
     items: CartItem[];
     orderItemImgLink: string;
@@ -52,7 +52,7 @@ interface ShopState {
     clearCartAPI: () => Promise<void>;
     toggleCart: (open?: boolean) => void;
     addOrder: (order: ShopOrder) => void;
-    cancelOrder: (orderId: string) => void;
+    cancelOrder: (orderId: number) => void;
     getTotalItems: () => number;
     getSubtotal: () => number;
     buyNowAPI: (variantId: number, quantity: number) => Promise<any>;
@@ -178,7 +178,7 @@ const mapAPIOrderToShopOrder = (apiOrder: any): ShopOrder => {
     };
 
     return {
-        id: (apiOrder.orderId || apiOrder.id)?.toString() || '',
+        id: Number(apiOrder.orderId || apiOrder.id || 0),
         items,
         orderItemImgLink,
         orderCode: apiOrder.orderCode || '',
@@ -415,7 +415,7 @@ export const useShopStore = create<ShopState>()(
                 orderHistory: [order, ...state.orderHistory],
                 cart: []
             })),
-            cancelOrder: (orderId) => set((state) => ({
+            cancelOrder: (orderId: number) => set((state) => ({
                 orderHistory: state.orderHistory.map(order =>
                     order.id === orderId ? { ...order, status: 'DIBATALKAN' } : order
                 )

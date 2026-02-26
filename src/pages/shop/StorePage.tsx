@@ -130,7 +130,7 @@ export default function StorePage() {
                                                 e.preventDefault();
                                                 e.stopPropagation();
 
-                                                const variantId = product.variants?.[0]?.id || parseInt(product.id);
+                                                const variantId = product.variants?.[0]?.id || product.id;
                                                 if (!isNaN(variantId)) {
                                                     openAddToCartModal(product);
                                                 } else {
@@ -142,7 +142,7 @@ export default function StorePage() {
                                                 e.stopPropagation();
 
                                                 if (token && user) {
-                                                    const variantId = product.variants?.[0]?.id || parseInt(product.id);
+                                                    const variantId = product.variants?.[0]?.id || product.id;
                                                     if (!isNaN(variantId)) {
                                                         openBuyNowModal(product);
                                                     } else {

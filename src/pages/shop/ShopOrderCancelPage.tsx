@@ -13,7 +13,7 @@ export default function ShopOrderCancelPage() {
     const [showSuccessModal, setShowSuccessModal] = useState(false)
 
     // Find the order in history
-    const order = orderHistory.find(o => o.id === id)
+    const order = orderHistory.find(o => o.id === Number(id))
 
     if (!order) {
         return (
@@ -60,7 +60,7 @@ export default function ShopOrderCancelPage() {
         }
 
         if (id) {
-            cancelOrder(id)
+            cancelOrder(Number(id))
         }
 
         setShowSuccessModal(true)
