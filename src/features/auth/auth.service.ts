@@ -1,5 +1,5 @@
 import { api } from "../../lib/axios"
-import type { ProfileResponse, UpdateProfileRequest, UpdateProfileResponse, ChangePasswordRequest, ChangePasswordResponse, LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, VerifyOTPResponse, LogoutResponse, WalletBalanceResponse } from "./auth.types"
+import type { ProfileResponse, UpdateProfileRequest, UpdateProfileResponse, ChangePasswordRequest, ChangePasswordResponse, LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, VerifyOTPResponse, LogoutResponse, WalletBalanceResponse, UploadProfilePictureRequest, UploadProfilePictureResponse } from "./auth.types"
 
 export const authService = {
     getProfile: async (): Promise<ProfileResponse> => {
@@ -15,6 +15,26 @@ export const authService = {
     updateProfile: async (data: UpdateProfileRequest): Promise<UpdateProfileResponse> => {
         try {
             const response = await api.put<UpdateProfileResponse>("/profile", data)
+            return response.data
+        } catch (error: any) {
+            if (error.response?.data) return error.response.data
+            throw error
+        }
+    },
+
+    uploadProfilePicture: async (data: UploadProfilePictureRequest): Promise<UploadProfilePictureResponse> => {
+        try {
+            const response = await api.post<UploadProfilePictureResponse>("/profile/profile-picture", data)
+            return response.data
+        } catch (error: any) {
+            if (error.response?.data) return error.response.data
+            throw error
+        }
+    },
+
+    deleteProfilePicture: async (): Promise<any> => {
+        try {
+            const response = await api.delete("/profile/profile-picture")
             return response.data
         } catch (error: any) {
             if (error.response?.data) return error.response.data

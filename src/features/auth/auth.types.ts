@@ -125,3 +125,19 @@ export interface WalletBalanceResponse {
     status: number
     timestamp: string
 }
+
+export interface UploadProfilePictureRequest {
+    profilePicture: string
+}
+
+export interface UploadProfilePictureResponse {
+    data: {
+        profilePicture: string
+        message: string
+        userId: string
+    }
+    success: boolean
+    message: string
+    status: number
+    timestamp: string
+}
