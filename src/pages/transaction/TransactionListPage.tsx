@@ -27,8 +27,8 @@ export default function TransactionListPage() {
 
     const getStatusInfo = (status: number) => {
         switch (status) {
-            case 0:
-            case 1: return { label: 'PENDING', color: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' };
+            case 0: return { label: 'PENDING', color: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' };
+            case 1:
             case 2: return { label: 'SETTLED', color: 'bg-green-500/10 border-green-500/30 text-green-400' };
             case 3: return { label: 'EXPIRED', color: 'bg-red-500/10 border-red-500/30 text-red-400' };
             case 4: return { label: 'CANCELLED', color: 'bg-gray-500/10 border-gray-500/30 text-gray-400' };
@@ -108,7 +108,7 @@ export default function TransactionListPage() {
                                                     {transaction.transactionLabel || `Transaksi #${transaction.transactionCode}`}
                                                 </h3>
                                                 <span className={cn("text-[9px] font-black px-2 py-0.5 rounded-full border tracking-widest", status.color)}>
-                                                    {status.label}
+                                                    {transaction.statusDesc}
                                                 </span>
                                             </div>
                                             <p className="text-xs text-gray-500">
