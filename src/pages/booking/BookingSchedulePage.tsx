@@ -236,7 +236,6 @@ export default function BookingSchedulePage() {
     };
 
     const selectedSlotsCount = selectedSlots.length;
-    console.log(selectedSlotsCount);
 
     // Pre-booking summary query
     const bookingSummaryParams = {

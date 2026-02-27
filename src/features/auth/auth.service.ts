@@ -24,10 +24,15 @@ export const authService = {
 
     uploadProfilePicture: async (data: UploadProfilePictureRequest): Promise<UploadProfilePictureResponse> => {
         try {
-            const response = await api.post<UploadProfilePictureResponse>("/profile/profile-picture", data)
+            const formData = new FormData()
+            formData.append("profilePicture", data.profilePicture)
+            const response = await api.post<UploadProfilePictureResponse>("/profile/profile-picture", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                }
+            })
             return response.data
         } catch (error: any) {
-            if (error.response?.data) return error.response.data
             throw error
         }
     },

@@ -127,7 +127,7 @@ export interface WalletBalanceResponse {
 }
 
 export interface UploadProfilePictureRequest {
-    profilePicture: string
+    profilePicture: File
 }
 
 export interface UploadProfilePictureResponse {

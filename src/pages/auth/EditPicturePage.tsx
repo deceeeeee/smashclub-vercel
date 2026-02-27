@@ -9,11 +9,12 @@ export default function EditProfilePage() {
     const navigate = useNavigate();
     const { user, updateUser } = useAuthStore();
     const [previewImage, setPreviewImage] = useState<string | null>(user?.avatar || null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const uploadMutation = useMutation({
-        mutationFn: (base64: string) => authService.uploadProfilePicture({ profilePicture: base64 }),
+        mutationFn: (file: File) => authService.uploadProfilePicture({ profilePicture: file }),
         onSuccess: (res) => {
             if (res.success) {
                 updateUser({ avatar: res.data.profilePicture });
@@ -23,7 +24,11 @@ export default function EditProfilePage() {
             }
         },
         onError: (err: any) => {
-            setError(err?.response?.data?.message || err.message || "Terjadi kesalahan server.");
+            if (err?.response?.status === 413) {
+                setError("File image must be under 2 MB");
+            } else {
+                setError(err?.response?.data?.message || err.message || "Terjadi kesalahan server.");
+            }
         }
     });
 
@@ -46,6 +51,7 @@ export default function EditProfilePage() {
         setError(null);
         const file = e.target.files?.[0];
         if (file) {
+            setSelectedFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreviewImage(reader.result as string);
@@ -57,6 +63,7 @@ export default function EditProfilePage() {
     const handleRemoveImage = () => {
         setError(null);
         setPreviewImage(null);
+        setSelectedFile(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -64,27 +71,16 @@ export default function EditProfilePage() {
 
     const handleSave = () => {
         setError(null);
-
-        if (!previewImage) {
-            if (user?.avatar) {
+        if (selectedFile) {
+            uploadMutation.mutate(selectedFile);
+        } else {
+            // This case handles when user removed the image
+            if (!previewImage && user?.avatar) {
                 deleteMutation.mutate();
             } else {
                 navigate(-1);
             }
-            return;
         }
-
-        if (previewImage === user?.avatar) {
-            navigate(-1);
-            return;
-        }
-
-        // Strip data prefix if present
-        const base64Data = previewImage.includes('base64,')
-            ? previewImage.split('base64,')[1]
-            : previewImage;
-
-        uploadMutation.mutate(base64Data);
     };
 
     const isPending = uploadMutation.isPending || deleteMutation.isPending;
@@ -177,7 +173,7 @@ export default function EditProfilePage() {
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={isPending || (previewImage === user?.avatar && !(!previewImage && user?.avatar))}
+                        disabled={isPending || (!selectedFile && previewImage === user?.avatar && !(!previewImage && user?.avatar))}
                         className="px-12 py-5 rounded-2xl bg-primary text-background font-bold hover:brightness-110 transition-all active:scale-95 shadow-[0_0_30px_rgba(0,214,181,0.2)] hover:shadow-[0_0_40px_rgba(0,214,181,0.4)] disabled:opacity-50 flex items-center gap-2"
                     >
                         {isPending && <Loader2 className="w-5 h-5 animate-spin" />}
